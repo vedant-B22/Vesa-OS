@@ -6,7 +6,8 @@
     "dev": "NODE_NO_WARNINGS=1 next dev",
     "build": "NODE_NO_WARNINGS=1 next build",
     "start": "NODE_NO_WARNINGS=1 next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
