@@ -1,0 +1,176 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum Role {
+  ADMIN
+  CLIENT
+}
+
+enum ProjectStatus {
+  PLANNING
+  IN_PROGRESS
+  REVIEW
+  APPROVED
+  COMPLETED
+  PAUSED
+}
+
+enum DeliverableStatus {
+  PENDING_REVIEW
+  APPROVED
+  REVISION_REQUESTED
+}
+
+enum RevisionStatus {
+  OPEN
+  RESOLVED
+  IN_PROGRESS
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  name          String
+  role          Role           @default(CLIENT)
+  clientId      String?        // Nullable for Admins
+  client        Client?        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  avatarUrl     String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  messages      Message[]
+  files         File[]
+  notifications Notification[]
+}
+
+model Client {
+  id             String    @id @default(uuid())
+  name           String
+  logoUrl        String?
+  primaryColor   String    @default("#0f172a") // Tailwind slate-900
+  secondaryColor String    @default("#3b82f6") // Tailwind blue-500
+  users          User[]
+  projects       Project[]
+  meetings       Meeting[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Project {
+  id           String        @id @default(uuid())
+  clientId     String
+  client       Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  name         String
+  description  String?
+  status       ProjectStatus @default(IN_PROGRESS)
+  progress     Int           @default(0)
+  startDate    DateTime?
+  endDate      DateTime?
+  deliverables Deliverable[]
+  messages     Message[]
+  files        File[]
+  meetings     Meeting[]
+  voiceNotes   VoiceNote[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Deliverable {
+  id               String            @id @default(uuid())
+  projectId        String
+  project          Project           @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name             String
+  description      String?
+  fileUrl          String
+  fileType         String
+  status           DeliverableStatus @default(PENDING_REVIEW)
+  version          Int               @default(1)
+  revisionRequests RevisionRequest[]
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+}
+
+model RevisionRequest {
+  id              String         @id @default(uuid())
+  deliverableId   String
+  deliverable     Deliverable    @relation(fields: [deliverableId], references: [id], onDelete: Cascade)
+  feedbackRaw     String
+  structuredBrief Json           // Detailed JSON: { improvements: [], style: "", priority: "", deadline: "", inspirationUrls: [] }
+  status          RevisionStatus @default(OPEN)
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
+}
+
+model VoiceNote {
+  id            String    @id @default(uuid())
+  projectId     String
+  project       Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  fileUrl       String
+  transcription String?
+  summary       String?
+  tasks         Json?     // Array of strings or object containing tasks
+  priority      Priority?
+  createdAt     DateTime  @default(now())
+}
+
+model Message {
+  id        String   @id @default(uuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  senderId  String
+  sender    User     @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model File {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name         String
+  fileUrl      String
+  size         Int
+  version      Int      @default(1)
+  folderPath   String   @default("/")
+  uploadedById String
+  uploadedBy   User     @relation(fields: [uploadedById], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+}
+
+model Meeting {
+  id             String    @id @default(uuid())
+  clientId       String
+  client         Client    @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  projectId      String?
+  project        Project?  @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  title          String
+  description    String?
+  scheduledAt    DateTime
+  googleMeetLink String?
+  summary        String?
+  createdAt      DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  content   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+}
