@@ -1,8 +1,17 @@
-import { createClient } from '@supabase/supabase-js';
-import { PrismaClient } from '@prisma/client';
-import pg from 'pg';
-import { PrismaPg } from '@prisma/adapter-pg';
-import 'dotenv/config';
+// Suppress pg library SSL mode alias warning
+if (typeof process !== 'undefined') {
+  process.on('warning', (warning) => {
+    if (warning.message?.includes('sslmode') || warning.message?.includes('SECURITY WARNING')) {
+      return;
+    }
+  });
+}
+
+const { createClient } = require('@supabase/supabase-js');
+const { PrismaClient } = require('@prisma/client');
+const pg = require('pg');
+const { PrismaPg } = require('@prisma/adapter-pg');
+require('dotenv/config');
 
 async function seed() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -42,7 +51,7 @@ async function seed() {
         console.log('User already exists in Supabase. Retrieving details...');
         const { data: usersList, error: listError } = await supabase.auth.admin.listUsers();
         if (listError) throw listError;
-        const existing = usersList?.users.find(u => u.email === adminEmail);
+        const existing = usersList?.users.find((u: any) => u.email === adminEmail);
         if (existing) {
           userId = existing.id;
         }

@@ -2,6 +2,20 @@ import pg from 'pg';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';
 
+// Suppress PostgreSQL connection string SSL deprecation warnings in Next.js Turbopack overlay
+if (typeof process !== 'undefined') {
+  process.on('warning', (warning) => {
+    if (
+      warning.message?.includes('sslmode') ||
+      warning.message?.includes('SECURITY WARNING')
+    ) {
+      return;
+    }
+    // Print other warnings normally
+    console.warn(warning.name, warning.message);
+  });
+}
+
 const globalForPrisma = global as unknown as { prisma: PrismaClient | undefined };
 
 const connectionString = process.env.DATABASE_URL;
