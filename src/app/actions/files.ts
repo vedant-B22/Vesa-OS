@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
 import { createClient as createSupabaseAdmin } from '@supabase/supabase-js';
 import { prisma } from '@/lib/db';
 
@@ -33,8 +33,7 @@ export async function addFileRecord(
   size: number,
   folderPath: string = '/'
 ) {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
 
   if (!user) {
     throw new Error('Unauthorized');

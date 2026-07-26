@@ -1,43 +1,14 @@
 import { ReactNode } from 'react';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { createClient } from '@/lib/supabase/server';
 import { getClientBranding } from './actions';
 import { logout } from '../login/actions';
+import { getCurrentUser } from '@/lib/auth';
 import { Sparkles, LogOut } from 'lucide-react';
 
 export default async function ClientLayout({ children }: { children: ReactNode }) {
-  const cookieStore = await cookies();
-  const localSession = cookieStore.get('vesa_session_user')?.value;
-  let user = null;
+  const user = await getCurrentUser();
 
-  if (localSession) {
-    try {
-      const parsed = JSON.parse(localSession);
-      user = {
-        id: parsed.id,
-        email: parsed.email,
-        user_metadata: {
-          role: parsed.role,
-          clientId: parsed.clientId,
-          name: parsed.name,
-        },
-      } as any;
-    } catch {}
-  }
-
-  // Fallback to Supabase API call only if no database session cookie is set
-  if (!user) {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
-    } catch (err) {
-      console.warn('Supabase Auth error in ClientLayout:', err);
-    }
-  }
-
-  if (!user) {
+  if (!user || user.role !== 'CLIENT') {
     redirect('/login');
   }
 
@@ -47,7 +18,7 @@ export default async function ClientLayout({ children }: { children: ReactNode }
   const logoUrl = branding?.logoUrl;
   const clientName = branding?.name || 'Client Workspace';
 
-  const name = user.user_metadata?.name || user.email?.split('@')[0] || 'Client';
+  const name = user.name || user.email?.split('@')[0] || 'Client';
 
   return (
     <div

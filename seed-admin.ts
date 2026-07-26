@@ -66,6 +66,11 @@ async function seed() {
     console.warn('Supabase Auth connection failed (Project is likely paused). Seeding user locally in Prisma Database...', supabaseErr.message || supabaseErr);
   }
 
+  // Hash the admin password using PBKDF2
+  const salt = require('crypto').randomBytes(16).toString('hex');
+  const hash = require('crypto').pbkdf2Sync(adminPassword, salt, 1000, 64, 'sha512').toString('hex');
+  const passwordHash = `${salt}:${hash}`;
+
   // 2. Create user in Prisma DB
   console.log('Upserting user in Postgres Database...');
   await prisma.user.upsert({
@@ -73,13 +78,15 @@ async function seed() {
     update: {
       email: adminEmail,
       name: adminName,
-      role: 'ADMIN'
+      role: 'ADMIN',
+      passwordHash,
     },
     create: {
       id: userId,
       email: adminEmail,
       name: adminName,
-      role: 'ADMIN'
+      role: 'ADMIN',
+      passwordHash,
     }
   });
 

@@ -48,6 +48,7 @@ model User {
   role          Role           @default(CLIENT)
   clientId      String?        // Nullable for Admins
   client        Client?        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  passwordHash  String?
   avatarUrl     String?
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt

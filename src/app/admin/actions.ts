@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/db';
 import { createClient } from '@supabase/supabase-js';
 import { ProjectStatus, DeliverableStatus, Priority } from '@prisma/client';
+import { hashPassword } from '@/lib/auth';
 
 // Initialize Supabase Admin Client (requires Service Role Key)
 const getSupabaseAdmin = () => {
@@ -123,6 +124,9 @@ export async function onboardClientUser(formData: FormData) {
       }
     }
 
+    // Hash the client's password
+    const passwordHash = hashPassword(password);
+
     // 2. Create User in our Prisma Database
     await prisma.user.create({
       data: {
@@ -131,6 +135,7 @@ export async function onboardClientUser(formData: FormData) {
         name,
         role: 'CLIENT',
         clientId,
+        passwordHash,
       },
     });
 

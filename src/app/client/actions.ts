@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { createClient } from '@/lib/supabase/server';
+import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { analyzeFeedback, transcribeVoiceNote } from '@/lib/ai';
 import { DeliverableStatus, RevisionStatus, Priority } from '@prisma/client';
@@ -11,14 +11,13 @@ import { DeliverableStatus, RevisionStatus, Priority } from '@prisma/client';
  * and returns their clientId.
  */
 async function assertClientSession() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  const user = await getCurrentUser();
   
-  if (!user || user.user_metadata?.role !== 'CLIENT') {
+  if (!user || user.role !== 'CLIENT') {
     throw new Error('Unauthorized access');
   }
 
-  const clientId = user.user_metadata?.clientId;
+  const clientId = user.clientId;
   if (!clientId) {
     throw new Error('Client organization context not found.');
   }

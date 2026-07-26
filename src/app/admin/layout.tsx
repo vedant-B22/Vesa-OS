@@ -1,9 +1,8 @@
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { cookies } from 'next/headers';
-import { createClient } from '@/lib/supabase/server';
 import { logout } from '../login/actions';
+import { getCurrentUser } from '@/lib/auth';
 import {
   Sparkles,
   LayoutDashboard,
@@ -19,41 +18,13 @@ import {
 } from 'lucide-react';
 
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const cookieStore = await cookies();
-  const localSession = cookieStore.get('vesa_session_user')?.value;
-  let user = null;
+  const user = await getCurrentUser();
 
-  if (localSession) {
-    try {
-      const parsed = JSON.parse(localSession);
-      user = {
-        id: parsed.id,
-        email: parsed.email,
-        user_metadata: {
-          role: parsed.role,
-          clientId: parsed.clientId,
-          name: parsed.name,
-        },
-      } as any;
-    } catch {}
-  }
-
-  // Fallback to Supabase API call only if no database session cookie is set
-  if (!user) {
-    try {
-      const supabase = await createClient();
-      const { data } = await supabase.auth.getUser();
-      user = data.user;
-    } catch (err) {
-      console.warn('Supabase Auth error in AdminLayout:', err);
-    }
-  }
-
-  if (!user) {
+  if (!user || user.role !== 'ADMIN') {
     redirect('/login');
   }
 
-  const name = user.user_metadata?.name || user.email?.split('@')[0] || 'Admin';
+  const name = user.name || user.email?.split('@')[0] || 'Admin';
 
   const menuItems = [
     { label: 'Overview', href: '/admin', icon: LayoutDashboard },
