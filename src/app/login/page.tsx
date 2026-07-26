@@ -24,12 +24,7 @@ export default function LoginPage() {
         {/* Header */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-2 mb-2">
-            <div className="p-2.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded-lg shadow-lg shadow-blue-500/20">
-              <Sparkles className="w-5 h-5 text-white" />
-            </div>
-            <span className="text-xl font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-              VESA OS
-            </span>
+            <img src="/logo.png" alt="VESA OS" className="h-12 w-auto object-contain" />
           </div>
           <p className="text-sm text-slate-400">Vesa Studios Production Environment</p>
         </div>

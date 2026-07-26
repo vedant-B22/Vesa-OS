@@ -42,14 +42,9 @@ export default async function AdminLayout({ children }: { children: ReactNode })
       <aside className="w-64 border-r border-slate-900 bg-slate-950/80 backdrop-blur-md flex flex-col justify-between hidden md:flex">
         <div>
           {/* Logo */}
-          <div className="h-16 flex items-center gap-2 px-6 border-b border-slate-900">
-            <div className="p-1.5 bg-gradient-to-tr from-blue-600 to-indigo-600 rounded shadow-md">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold tracking-wider text-sm bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">
-              VESA OS
-            </span>
-            <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full font-medium">
+          <div className="h-16 flex items-center gap-2.5 px-6 border-b border-slate-900 justify-between">
+            <img src="/logo.png" alt="VESA OS" className="h-7 w-auto object-contain" />
+            <span className="text-[10px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full font-medium shrink-0">
               Admin
             </span>
           </div>
