@@ -94,6 +94,15 @@ export async function onboardClientUser(formData: FormData) {
     return { error: 'All fields are required.' };
   }
 
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return { error: 'Invalid email address format.' };
+  }
+
+  if (password.length < 6) {
+    return { error: 'Password must be at least 6 characters long.' };
+  }
+
   try {
     let userId = '';
 

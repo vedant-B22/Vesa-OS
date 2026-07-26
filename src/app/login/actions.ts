@@ -36,7 +36,13 @@ export async function login(state: any, formData: FormData) {
       name: dbUser.name,
       role: dbUser.role,
       clientId: dbUser.clientId
-    }), { path: '/' });
+    }), {
+      path: '/',
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 60 * 60 * 24 * 7, // 7 days
+    });
 
   } catch (err: any) {
     console.error('Login database connection failure:', err);
