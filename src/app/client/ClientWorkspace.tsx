@@ -55,11 +55,13 @@ export default function ClientWorkspace({
   const [selectedStyle, setSelectedStyle] = useState('Modern');
   const [revisionPriority, setRevisionPriority] = useState('MEDIUM');
   const [revisionDeadline, setRevisionDeadline] = useState('');
+  const [aiError, setAiError] = useState<string | null>(null);
 
   // Audio Upload State
   const [audioFile, setAudioFile] = useState<File | null>(null);
   const [isAudioUploading, setIsAudioUploading] = useState(false);
   const [voiceNoteResult, setVoiceNoteResult] = useState<any | null>(null);
+  const [voiceNoteError, setVoiceNoteError] = useState<string | null>(null);
 
   // Audio Recording State
   const [isRecording, setIsRecording] = useState(false);
@@ -92,8 +94,13 @@ export default function ClientWorkspace({
   const handleAnalyzeFeedback = async () => {
     if (!rawFeedback.trim() || !activeDeliverableId) return;
     setIsAiLoading(true);
+    setAiError(null);
     try {
+      console.log("Form submit: Requesting AI feedback analysis...");
+      console.log("Before API request: analyzeRawFeedbackAction", { activeDeliverableId, rawFeedbackLength: rawFeedback.length });
       const res = await analyzeRawFeedbackAction(activeDeliverableId, rawFeedback);
+      console.log("After API response: analyzeRawFeedbackAction result:", res);
+
       if (res.success && res.analysis) {
         setAiAnalysis(res.analysis);
         setSelectedStyle(res.analysis.suggestedStyle || 'Modern');
@@ -103,9 +110,13 @@ export default function ClientWorkspace({
           answers[q] = '';
         });
         setQuestionAnswers(answers);
+      } else if (res.error) {
+        console.warn("API returned error response:", res.error);
+        setAiError(res.error);
       }
-    } catch (err) {
-      console.error(err);
+    } catch (err: any) {
+      console.error("Inside catch block: analyzeFeedback failed", err);
+      setAiError(err.message || 'An unexpected error occurred during AI analysis.');
     } finally {
       setIsAiLoading(false);
     }
@@ -114,30 +125,43 @@ export default function ClientWorkspace({
   // Submit final structured revision brief
   const handleSubmitRevision = () => {
     if (!activeDeliverableId || !aiAnalysis) return;
+    setAiError(null);
     startTransition(async () => {
-      const res = await submitStructuredRevisionAction(
-        activeDeliverableId,
-        rawFeedback,
-        aiAnalysis,
-        questionAnswers
-      );
-      if (res.success) {
-        // Update local state
-        setProjects((prev) =>
-          prev.map((proj) => ({
-            ...proj,
-            deliverables: proj.deliverables.map((del: any) =>
-              del.id === activeDeliverableId
-                ? { ...del, status: 'REVISION_REQUESTED' }
-                : del
-            ),
-          }))
+      try {
+        console.log("Form submit: Submitting structured revision brief...");
+        console.log("Before API request: submitStructuredRevisionAction");
+        const res = await submitStructuredRevisionAction(
+          activeDeliverableId,
+          rawFeedback,
+          aiAnalysis,
+          questionAnswers
         );
-        // Reset states
-        setActiveDeliverableId(null);
-        setRawFeedback('');
-        setAiAnalysis(null);
-        setQuestionAnswers({});
+        console.log("After API response: submitStructuredRevisionAction result:", res);
+
+        if (res.success) {
+          // Update local state
+          setProjects((prev) =>
+            prev.map((proj) => ({
+              ...proj,
+              deliverables: proj.deliverables.map((del: any) =>
+                del.id === activeDeliverableId
+                  ? { ...del, status: 'REVISION_REQUESTED' }
+                  : del
+              ),
+            }))
+          );
+          // Reset states
+          setActiveDeliverableId(null);
+          setRawFeedback('');
+          setAiAnalysis(null);
+          setQuestionAnswers({});
+        } else if (res.error) {
+          console.warn("API returned error response:", res.error);
+          setAiError(res.error);
+        }
+      } catch (err: any) {
+        console.error("Inside catch block: submitRevision failed", err);
+        setAiError(err.message || 'An unexpected error occurred during submission.');
       }
     });
   };
@@ -150,21 +174,30 @@ export default function ClientWorkspace({
     setAudioFile(file);
     setIsAudioUploading(true);
     setVoiceNoteResult(null);
+    setVoiceNoteError(null);
 
     const reader = new FileReader();
     reader.onloadend = async () => {
       const base64String = (reader.result as string).split(',')[1];
       try {
+        console.log("Form submit: Uploading audio voice note...");
+        console.log("Before API request: uploadClientVoiceNoteAction", { selectedProjectId, mimeType: file.type });
         const res = await uploadClientVoiceNoteAction(
           selectedProjectId,
           base64String,
           file.type
         );
+        console.log("After API response: uploadClientVoiceNoteAction result:", res);
+
         if (res.success && res.voiceNote) {
           setVoiceNoteResult(res.voiceNote);
+        } else if (res.error) {
+          console.warn("API returned error response:", res.error);
+          setVoiceNoteError(res.error);
         }
-      } catch (err) {
-        console.error(err);
+      } catch (err: any) {
+        console.error("Inside catch block: handleAudioUpload failed", err);
+        setVoiceNoteError(err.message || 'An unexpected error occurred during audio processing.');
       } finally {
         setIsAudioUploading(false);
       }
@@ -190,21 +223,30 @@ export default function ClientWorkspace({
         setAudioFile(file);
         setIsAudioUploading(true);
         setVoiceNoteResult(null);
+        setVoiceNoteError(null);
 
         const reader = new FileReader();
         reader.onloadend = async () => {
           const base64String = (reader.result as string).split(',')[1];
           try {
+            console.log("Form submit: Processing recorded audio...");
+            console.log("Before API request: uploadClientVoiceNoteAction", { selectedProjectId, mimeType: 'audio/webm' });
             const res = await uploadClientVoiceNoteAction(
               selectedProjectId,
               base64String,
               'audio/webm'
             );
+            console.log("After API response: uploadClientVoiceNoteAction result:", res);
+
             if (res.success && res.voiceNote) {
               setVoiceNoteResult(res.voiceNote);
+            } else if (res.error) {
+              console.warn("API returned error response:", res.error);
+              setVoiceNoteError(res.error);
             }
-          } catch (err) {
-            console.error(err);
+          } catch (err: any) {
+            console.error("Inside catch block: stopRecording failed", err);
+            setVoiceNoteError(err.message || 'An unexpected error occurred during recording processing.');
           } finally {
             setIsAudioUploading(false);
           }
@@ -441,6 +483,16 @@ export default function ClientWorkspace({
               Upload an audio voice note to transcribe revision items, summarize tasks, and set priorities automatically.
             </p>
 
+            {voiceNoteError && (
+              <div className="p-3 bg-red-950/30 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-semibold block mb-0.5">Voice Note Processing Failed</span>
+                  {voiceNoteError}
+                </div>
+              </div>
+            )}
+
             <div className="relative border border-dashed border-slate-800 bg-slate-950/50 hover:bg-slate-950 rounded-xl p-6 transition-colors flex flex-col items-center justify-center cursor-pointer group">
               <input
                 type="file"
@@ -585,12 +637,23 @@ export default function ClientWorkspace({
                   setRawFeedback('');
                   setAiAnalysis(null);
                   setQuestionAnswers({});
+                  setAiError(null);
                 }}
                 className="text-xs text-slate-500 hover:text-slate-300 font-semibold"
               >
                 Cancel
               </button>
             </div>
+
+            {aiError && (
+              <div className="p-3.5 bg-red-950/30 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-start gap-2 animate-shake">
+                <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
+                <div>
+                  <span className="font-semibold block mb-0.5">AI Analysis Failed</span>
+                  {aiError}
+                </div>
+              </div>
+            )}
 
             {/* Step 1: Input raw feedback */}
             {!aiAnalysis ? (
