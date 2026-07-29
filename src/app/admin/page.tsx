@@ -109,7 +109,7 @@ export default async function AdminDashboard() {
                 <div key={project.id} className="p-5 flex items-center justify-between hover:bg-card/40 transition-colors">
                   <div className="space-y-1 min-w-0 pr-4">
                     <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400 bg-background px-2 py-0.5 rounded border border-border truncate max-w-[130px] inline-block">
-                      {project.client.name}
+                      {project.client?.name || 'Unknown Client'}
                     </span>
                     <h3 className="text-sm font-bold text-foreground truncate">{project.name}</h3>
                   </div>
@@ -163,7 +163,7 @@ export default async function AdminDashboard() {
                   <div className="space-y-1 min-w-0">
                     <h3 className="text-xs font-bold text-foreground truncate">{meeting.title}</h3>
                     <p className="text-[10px] text-muted font-medium truncate">
-                      {meeting.client.name} &bull; {new Date(meeting.scheduledAt).toLocaleDateString()}
+                      {meeting.client?.name || 'Unknown Client'} &bull; {new Date(meeting.scheduledAt).toLocaleDateString()}
                     </p>
                     {meeting.googleMeetLink && (
                       <a

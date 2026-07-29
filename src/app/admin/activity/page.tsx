@@ -13,9 +13,9 @@ export default async function AdminActivityPage() {
     metadata: log.metadata,
     timestamp: log.timestamp,
     user: {
-      name: log.user.name,
-      role: log.user.role,
-      email: log.user.email,
+      name: log.user?.name || 'System',
+      role: log.user?.role || 'SYSTEM',
+      email: log.user?.email || '',
     },
   }));
 

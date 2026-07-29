@@ -33,8 +33,8 @@ export function ActivityClient({ logs }: ActivityClientProps) {
   // Filter logs by search query
   const filteredLogs = logs.filter(log => {
     return log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           log.user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-           log.user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (log.user?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+           (log.user?.email || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
            log.entity.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
@@ -95,7 +95,7 @@ export function ActivityClient({ logs }: ActivityClientProps) {
                   {/* Actor details footer */}
                   <div className="flex items-center gap-1.5 text-[9px] text-muted font-bold pt-1.5">
                     <User className="w-3 h-3 text-slate-500" />
-                    <span>Actor: {log.user.name} &bull; <span className="text-slate-500 font-mono">{log.user.email}</span> &bull; <span className="text-primary font-mono">{log.user.role}</span></span>
+                    <span>Actor: {log.user?.name || 'System'} &bull; <span className="text-slate-500 font-mono">{log.user?.email || ''}</span> &bull; <span className="text-primary font-mono">{log.user?.role || 'SYSTEM'}</span></span>
                   </div>
 
                 </div>

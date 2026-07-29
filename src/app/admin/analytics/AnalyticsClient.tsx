@@ -143,7 +143,7 @@ export function AnalyticsClient({ data }: AnalyticsClientProps) {
                       <Activity className="w-3.5 h-3.5 text-slate-500 shrink-0" />
                       <div className="min-w-0">
                         <span className="text-xs font-bold text-foreground block truncate">{act.action}</span>
-                        <span className="text-[9px] text-muted block mt-0.5">Actor: {act.user.name} ({act.user.role})</span>
+                        <span className="text-[9px] text-muted block mt-0.5">Actor: {act.user?.name || 'System'} ({act.user?.role || 'SYSTEM'})</span>
                       </div>
                     </div>
                     <span className="text-[8px] uppercase tracking-wider bg-background border border-border text-muted px-2 py-0.5 rounded font-bold shrink-0">

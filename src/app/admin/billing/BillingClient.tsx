@@ -79,7 +79,7 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
 
   // Filter invoices
   const filteredInvoices = invoices.filter(invoice => {
-    const matchesSearch = invoice.client.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const matchesSearch = (invoice.client?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
                           invoice.id.slice(0, 8).toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || invoice.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -223,7 +223,7 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
                       </span>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-sm font-bold text-foreground truncate">{invoice.client.name}</p>
+                      <p className="text-sm font-bold text-foreground truncate">{invoice.client?.name || 'Unknown Client'}</p>
                       <span className="text-[10px] text-muted block font-semibold">Due Date: {new Date(invoice.dueDate).toLocaleDateString()}</span>
                     </div>
                   </div>
@@ -343,7 +343,7 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
             <div className="flex justify-between items-start pb-2 border-b border-border">
               <div>
                 <h3 className="text-base font-bold text-white font-mono">INV-{selectedInvoice.id.slice(0, 8).toUpperCase()}</h3>
-                <p className="text-[10px] text-muted mt-0.5 font-semibold">Recording payment from: {selectedInvoice.client.name}</p>
+                <p className="text-[10px] text-muted mt-0.5 font-semibold">Recording payment from: {selectedInvoice.client?.name || 'Unknown Client'}</p>
               </div>
               <button
                 onClick={() => setSelectedInvoice(null)}

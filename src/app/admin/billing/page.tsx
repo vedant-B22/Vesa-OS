@@ -14,8 +14,8 @@ export default async function AdminBillingPage() {
     dueDate: inv.dueDate,
     createdAt: inv.createdAt,
     client: {
-      id: inv.client.id,
-      name: inv.client.name,
+      id: inv.client?.id || '',
+      name: inv.client?.name || 'Unknown Client',
     },
     payments: inv.payments.map((p) => ({
       id: p.id,

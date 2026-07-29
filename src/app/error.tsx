@@ -14,19 +14,19 @@ export default function GlobalError({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col items-center justify-center font-sans p-6">
-      <div className="max-w-md w-full text-center space-y-6 bg-slate-900/40 border border-slate-900 rounded-3xl p-8 backdrop-blur-md shadow-2xl animate-scale-up">
+    <div className="min-h-screen bg-background text-white flex flex-col items-center justify-center font-sans p-6">
+      <div className="max-w-md w-full text-center space-y-6 bg-surface border border-border rounded-[20px] p-8 shadow-2xl animate-scale-up">
         {/* Visual Icon */}
-        <div className="w-16 h-16 bg-slate-950 border border-slate-900 rounded-2xl flex items-center justify-center mx-auto text-red-500 shadow-inner">
+        <div className="w-16 h-16 bg-background border border-border rounded-[14px] flex items-center justify-center mx-auto text-danger shadow-inner">
           <AlertOctagon className="w-8 h-8" />
         </div>
 
         {/* Text Details */}
         <div className="space-y-2">
-          <h1 className="text-3xl font-extrabold tracking-tight text-white">System Error</h1>
-          <h2 className="text-sm font-semibold uppercase tracking-wider text-slate-400">An unexpected exception occurred</h2>
-          <p className="text-xs text-slate-500 leading-relaxed pt-2">
-            Vesa OS experienced a runtime rendering collision. Try resetting the cache or reloading the workspace.
+          <h1 className="text-xl font-bold tracking-tight text-white">System Collision</h1>
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted">An unexpected runtime exception occurred</h2>
+          <p className="text-xs text-muted leading-relaxed pt-2 font-semibold">
+            Vesa OS experienced a database query or property validation exception. Check database connections and credentials.
           </p>
         </div>
 
@@ -34,9 +34,9 @@ export default function GlobalError({ error, reset }: ErrorProps) {
         <div className="pt-4">
           <button
             onClick={() => reset()}
-            className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-950/20 hover:bg-red-950/40 border border-red-900/40 text-xs font-semibold text-red-300 rounded-xl transition-all shadow-md"
+            className="inline-flex items-center gap-2 px-5 py-2.5 bg-danger/10 hover:bg-danger/20 border border-danger/20 hover:border-danger/30 text-xs font-bold text-danger rounded-[12px] transition-all shadow-md"
           >
-            <RefreshCw className="w-3.5 h-3.5" />
+            <RefreshCw className="w-3.5 h-3.5 animate-spin-slow" />
             Reload Workspace
           </button>
         </div>

@@ -12,8 +12,8 @@ export default async function AdminAnalyticsPage() {
     entity: act.entity,
     timestamp: act.timestamp,
     user: {
-      name: act.user.name,
-      role: act.user.role,
+      name: act.user?.name || 'System',
+      role: act.user?.role || 'SYSTEM',
     },
   }));
 

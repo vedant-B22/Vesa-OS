@@ -16,8 +16,8 @@ export default async function AdminProjectsPage() {
     startDate: p.startDate,
     endDate: p.endDate,
     client: {
-      id: p.client.id,
-      name: p.client.name,
+      id: p.client?.id || '',
+      name: p.client?.name || 'Unknown Client',
     },
     tasks: p.tasks.map((t) => ({
       id: t.id,

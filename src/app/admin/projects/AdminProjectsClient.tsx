@@ -89,7 +89,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
   // Filter projects
   const filteredProjects = projects.filter(project => {
     const matchesSearch = project.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          project.client.name.toLowerCase().includes(searchQuery.toLowerCase());
+                          (project.client?.name || '').toLowerCase().includes(searchQuery.toLowerCase());
     const matchesStatus = statusFilter === 'ALL' || project.status === statusFilter;
     return matchesSearch && matchesStatus;
   });
@@ -270,7 +270,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
                       <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400 bg-background px-2 py-0.5 rounded border border-border truncate max-w-[150px]">
-                        {project.client.name}
+                        {project.client?.name || 'Unknown Client'}
                       </span>
                       <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${statusColors[project.status]}`}>
                         {project.status.replace('_', ' ')}
