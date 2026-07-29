@@ -5,6 +5,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { analyzeFeedback, transcribeVoiceNote } from '@/lib/ai';
 import { DeliverableStatus, RevisionStatus, Priority } from '@prisma/client';
+import { logActivity } from '@/lib/activity';
 
 /**
  * Asserts that the current session is an authenticated client user
@@ -86,6 +87,8 @@ export async function approveClientDeliverable(deliverableId: string) {
       where: { id: deliverableId },
       data: { status: DeliverableStatus.APPROVED },
     });
+
+    await logActivity(`Approved deliverable: "${deliverable.name}"`, 'Deliverable', { deliverableId, projectId: deliverable.projectId });
 
     // Create notification for admin users
     const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
@@ -180,6 +183,8 @@ export async function submitStructuredRevisionAction(
       data: { status: DeliverableStatus.REVISION_REQUESTED },
     });
 
+    await logActivity(`Submitted revision request for: "${deliverable.name}"`, 'RevisionRequest', { deliverableId, projectId: deliverable.projectId });
+
     // 3. Notify Admin Users
     const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
     for (const admin of admins) {
@@ -235,6 +240,23 @@ export async function uploadClientVoiceNoteAction(
         priority: aiResult.priority as Priority,
       },
     });
+
+    // Auto-create relational Tasks from voice note tasks to make them actionable!
+    if (aiResult.tasks && aiResult.tasks.length > 0) {
+      for (const t of aiResult.tasks) {
+        if (t && t.trim().length > 0) {
+          await prisma.task.create({
+            data: {
+              projectId,
+              title: t,
+              priority: aiResult.priority as Priority,
+            }
+          });
+        }
+      }
+    }
+
+    await logActivity(`Uploaded voice feedback note for project`, 'VoiceNote', { voiceNoteId: voiceNote.id, projectId });
 
     // Notify Admins
     const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
