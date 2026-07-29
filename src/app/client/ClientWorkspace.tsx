@@ -25,6 +25,7 @@ import {
   MessageSquare,
   AlertTriangle,
   Upload,
+  Loader2,
 } from 'lucide-react';
 
 interface ClientWorkspaceProps {
@@ -290,10 +291,10 @@ export default function ClientWorkspace({
                 setVoiceNoteResult(null);
                 setAudioFile(null);
               }}
-              className={`w-full p-4 rounded-2xl text-left border transition-all duration-200 ${
+              className={`w-full p-4 rounded-[20px] text-left border transition-all duration-200 ${
                 selectedProjectId === project.id
-                  ? 'bg-slate-900 border-[var(--client-secondary)] shadow-lg shadow-blue-500/5'
-                  : 'bg-slate-900/40 border-slate-900/60 hover:border-slate-800'
+                  ? 'bg-card border-primary shadow-lg shadow-primary/5'
+                  : 'bg-surface border-border hover:border-border/80'
               }`}
             >
               <div className="flex justify-between items-center mb-1">
@@ -317,7 +318,7 @@ export default function ClientWorkspace({
         {activeProject ? (
           <>
             {/* Active Project Title & Progress */}
-            <div className="p-6 bg-slate-900/40 border border-slate-900 rounded-3xl space-y-4">
+            <div className="p-6 bg-surface border border-border rounded-[20px] space-y-4 shadow-md">
               <div className="flex justify-between items-start">
                 <div>
                   <h1 className="text-xl font-bold text-white">{activeProject.name}</h1>
@@ -343,25 +344,25 @@ export default function ClientWorkspace({
             </div>
 
             {/* Tab Selector */}
-            <div className="grid grid-cols-2 p-1 gap-1 bg-slate-950/80 border border-slate-900 rounded-xl mb-4">
+            <div className="grid grid-cols-2 p-1 gap-1 bg-background border border-border rounded-[14px] mb-4">
               <button
-                type="button"
                 onClick={() => setActiveTab('deliverables')}
-                className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                type="button"
+                className={`py-2 text-xs font-semibold rounded-[10px] transition-all duration-150 ${
                   activeTab === 'deliverables'
-                    ? 'bg-slate-900 text-white shadow-sm border border-slate-850'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-card text-white shadow-sm border border-border font-bold'
+                    : 'text-muted hover:text-foreground'
                 }`}
               >
-                Deliverables Reviews
+                Deliverables
               </button>
               <button
-                type="button"
                 onClick={() => setActiveTab('chat')}
-                className={`py-2 text-xs font-semibold rounded-lg transition-all ${
+                type="button"
+                className={`py-2 text-xs font-semibold rounded-[10px] transition-all duration-150 ${
                   activeTab === 'chat'
-                    ? 'bg-slate-900 text-white shadow-sm border border-slate-850'
-                    : 'text-slate-400 hover:text-slate-200'
+                    ? 'bg-card text-white shadow-sm border border-border font-bold'
+                    : 'text-muted hover:text-foreground'
                 }`}
               >
                 Project Chat
@@ -380,19 +381,19 @@ export default function ClientWorkspace({
                     activeProject.deliverables.map((item: any) => (
                       <div
                         key={item.id}
-                        className="p-5 bg-slate-900/40 border border-slate-900 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-slate-800 transition-colors"
+                        className="p-5 bg-surface border border-border rounded-[20px] flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:border-border/80 transition-colors"
                       >
                         <div className="space-y-1.5">
                           <div className="flex items-center gap-2">
                             <span className="text-sm font-semibold text-slate-200">
                               {item.name}
                             </span>
-                            <span className="text-[10px] text-slate-400 font-semibold bg-slate-950 border border-slate-900 px-1.5 py-0.5 rounded">
+                            <span className="text-[10px] text-slate-450 font-semibold bg-background border border-border px-1.5 py-0.5 rounded-[6px]">
                               v{item.version}
                             </span>
                           </div>
                           {item.description && (
-                            <p className="text-xs text-slate-400 line-clamp-1">{item.description}</p>
+                            <p className="text-xs text-muted line-clamp-1">{item.description}</p>
                           )}
                         </div>
 
@@ -402,7 +403,7 @@ export default function ClientWorkspace({
                             href={item.fileUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="flex items-center gap-1.5 px-3 py-2 bg-slate-950 hover:bg-slate-900 border border-slate-900 text-xs font-semibold text-slate-300 rounded-xl transition-colors"
+                            className="flex items-center gap-1.5 px-3 py-2 bg-background hover:bg-card border border-border text-xs font-semibold text-foreground rounded-[14px] transition-all"
                           >
                             Preview Build
                             <ExternalLink className="w-3.5 h-3.5" />
@@ -413,7 +414,7 @@ export default function ClientWorkspace({
                               <button
                                 type="button"
                                 onClick={() => setActiveDeliverableId(item.id)}
-                                className="px-3 py-2 bg-slate-850 hover:bg-slate-800 border border-slate-800 text-xs font-semibold text-slate-300 rounded-xl transition-colors"
+                                className="px-3 py-2 bg-card hover:bg-surface border border-border text-xs font-semibold text-foreground rounded-[14px] transition-all"
                               >
                                 Request Revision
                               </button>
@@ -421,7 +422,7 @@ export default function ClientWorkspace({
                                 type="button"
                                 onClick={() => handleApprove(item.id)}
                                 disabled={isPending}
-                                className="px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-blue-500/10"
+                                className="px-3.5 py-2 bg-primary hover:bg-blue-500 text-white text-xs font-bold rounded-[14px] transition-all shadow-md shadow-primary/10"
                               >
                                 Approve
                               </button>
@@ -445,7 +446,7 @@ export default function ClientWorkspace({
                       </div>
                     ))
                   ) : (
-                    <div className="p-10 bg-slate-900/20 border border-slate-900 rounded-2xl text-center text-slate-500 text-xs">
+                    <div className="p-10 bg-card border border-border rounded-[20px] text-center text-slate-500 text-xs shadow-inner">
                       No deliverables published for review yet.
                     </div>
                   )}
@@ -471,7 +472,7 @@ export default function ClientWorkspace({
         
         {/* Voice Note Uploader */}
         {selectedProjectId && (
-          <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-5 space-y-4 shadow-xl">
+          <div className="bg-surface border border-border rounded-[20px] p-5 space-y-4 shadow-lg">
             <div className="flex items-center gap-2 pb-2 border-b border-slate-900">
               <Mic className="w-4 h-4 text-[var(--client-secondary)]" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
@@ -493,54 +494,53 @@ export default function ClientWorkspace({
               </div>
             )}
 
-            <div className="relative border border-dashed border-slate-800 bg-slate-950/50 hover:bg-slate-950 rounded-xl p-6 transition-colors flex flex-col items-center justify-center cursor-pointer group">
-              <input
-                type="file"
-                accept="audio/*"
-                onChange={handleAudioUpload}
-                disabled={isAudioUploading}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
-              {isAudioUploading ? (
-                <div className="flex flex-col items-center gap-2">
-                  <span className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                  <span className="text-[10px] text-slate-400">AI Transcribing...</span>
+            {isAudioUploading ? (
+              <div className="p-8 bg-card border border-border rounded-[14px] flex flex-col items-center justify-center text-center space-y-2">
+                <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                <span className="text-xs text-foreground font-semibold">AI Transcribing...</span>
+                <span className="text-[10px] text-muted">Extracting action sprint tasks</span>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="relative border border-dashed border-border bg-background hover:bg-card rounded-[14px] p-6 transition-all flex flex-col items-center justify-center cursor-pointer group">
+                  <input
+                    type="file"
+                    accept="audio/*"
+                    onChange={handleAudioUpload}
+                    className="absolute inset-0 opacity-0 cursor-pointer"
+                  />
+                  <Upload className="w-5 h-5 text-slate-500 group-hover:text-primary transition-colors mb-2" />
+                  <span className="text-xs text-foreground font-semibold">Upload Audio File</span>
+                  <span className="text-[10px] text-muted mt-1">Drag and drop or browse files</span>
                 </div>
-              ) : (
-                <div className="flex flex-col items-center gap-2">
-                  <Upload className="w-5 h-5 text-slate-500 group-hover:text-slate-300 transition-colors" />
-                  <span className="text-[10px] text-slate-400 font-medium">Click to select Audio</span>
-                  <span className="text-[8px] text-slate-600">MP3, WAV, M4A up to 10MB</span>
-                </div>
-              )}
-            </div>
 
-            <div className="flex gap-2">
-              {isRecording ? (
-                <button
-                  type="button"
-                  onClick={stopRecording}
-                  className="w-full py-2 bg-red-600 hover:bg-red-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5 animate-pulse"
-                >
-                  <span className="w-2 h-2 bg-white rounded-full" />
-                  Stop Recording
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={startRecording}
-                  disabled={isAudioUploading}
-                  className="w-full py-2 bg-slate-950 hover:bg-slate-900 border border-slate-900 text-slate-350 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
-                >
-                  <Mic className="w-3.5 h-3.5 text-red-500" />
-                  Record Live Note
-                </button>
-              )}
-            </div>
+                <div className="flex gap-2">
+                  {isRecording ? (
+                    <button
+                      type="button"
+                      onClick={stopRecording}
+                      className="w-full py-2.5 bg-danger hover:bg-red-500 text-white text-xs font-bold rounded-[14px] flex items-center justify-center gap-1.5 animate-pulse shadow-md transition-colors"
+                    >
+                      <span className="w-2 h-2 bg-white rounded-full" />
+                      Stop Recording
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={startRecording}
+                      className="w-full py-2.5 bg-background hover:bg-card border border-border text-muted hover:text-foreground text-xs font-bold rounded-[14px] flex items-center justify-center gap-1.5 transition-all"
+                    >
+                      <Mic className="w-3.5 h-3.5 text-danger shrink-0" />
+                      Record Live Note
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Display Voice Note Transcription Results */}
             {voiceNoteResult && (
-              <div className="p-3.5 bg-slate-950 border border-slate-900 rounded-xl space-y-2.5 max-h-64 overflow-y-auto">
+              <div className="p-3.5 bg-background border border-border rounded-[14px] space-y-2.5 max-h-64 overflow-y-auto">
                 <div className="flex justify-between items-center">
                   <span className="text-[9px] font-bold uppercase px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/20">
                     Priority: {voiceNoteResult.priority}
@@ -574,7 +574,7 @@ export default function ClientWorkspace({
         )}
 
         {/* Meetings Summary Card */}
-        <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-5 space-y-4 shadow-xl">
+        <div className="bg-surface border border-border rounded-[20px] p-5 space-y-4 shadow-lg">
           <div className="flex items-center gap-2 pb-2 border-b border-slate-900">
             <Video className="w-4 h-4 text-blue-400" />
             <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">
@@ -585,8 +585,8 @@ export default function ClientWorkspace({
           <div className="space-y-3.5">
             {meetings.length > 0 ? (
               meetings.map((meeting) => (
-                <div key={meeting.id} className="flex gap-3 items-start pb-3 border-b border-slate-900 last:pb-0 last:border-b-0">
-                  <div className="p-2 bg-slate-950 border border-slate-900 text-slate-400 rounded-lg flex-shrink-0">
+                <div className="flex gap-3.5 items-start pb-4 border-b border-border last:pb-0 last:border-b-0">
+                  <div className="p-2 bg-background border border-border text-muted rounded-[10px] flex-shrink-0">
                     <Video className="w-3.5 h-3.5" />
                   </div>
                   <div className="space-y-0.5 min-w-0">
@@ -621,7 +621,7 @@ export default function ClientWorkspace({
       {/* AI REVISION MODAL / WIZARD OVERLAY */}
       {activeDeliverableId && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-[20px] p-6 shadow-2xl space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
             
             {/* Modal Header */}
             <div className="flex justify-between items-start pb-3 border-b border-slate-850">

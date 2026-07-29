@@ -22,7 +22,9 @@ import {
   Menu,
   ChevronLeft,
   ChevronRight,
-  Search
+  Search,
+  Bell,
+  Layers
 } from 'lucide-react';
 
 interface MenuLink {
@@ -44,10 +46,12 @@ interface AdminLayoutClientProps {
 export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutClientProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
+  const [showWorkspaceSwitcher, setShowWorkspaceSwitcher] = useState(false);
   const pathname = usePathname();
 
   const menuItems: MenuLink[] = [
     { label: 'Overview', href: '/admin', icon: LayoutDashboard },
+    { label: 'AI Workspace', href: '/admin/ai', icon: Sparkles },
     { label: 'Clients', href: '/admin/clients', icon: Users },
     { label: 'Projects', href: '/admin/projects', icon: FolderKanban },
     { label: 'Deliverables', href: '/admin/deliverables', icon: FileCheck },
@@ -64,46 +68,90 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
 
   const linkClass = (href: string) => {
     const isActive = pathname === href;
-    return `flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 text-sm font-medium ${
+    return `flex items-center gap-3 px-3.5 py-2.5 rounded-[14px] transition-all duration-150 text-xs font-semibold ${
       isActive 
-        ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/10' 
-        : 'text-slate-400 hover:text-slate-100 hover:bg-slate-900/60'
+        ? 'bg-primary text-white shadow-md shadow-primary/10' 
+        : 'text-muted hover:text-foreground hover:bg-card border border-transparent hover:border-border'
     }`;
   };
 
+  // Simple breadcrumbs generator
+  const getBreadcrumbs = () => {
+    const parts = pathname.split('/').filter(Boolean);
+    return parts.map((part, index) => {
+      const href = '/' + parts.slice(0, index + 1).join('/');
+      const isLast = index === parts.length - 1;
+      const label = part.charAt(0).toUpperCase() + part.slice(1).replace('-', ' ');
+      return (
+        <span key={href} className="flex items-center gap-1.5">
+          <span className="text-border">/</span>
+          {isLast ? (
+            <span className="text-foreground font-semibold">{label}</span>
+          ) : (
+            <Link href={href} className="text-muted hover:text-foreground transition-colors">{label}</Link>
+          )}
+        </span>
+      );
+    });
+  };
+
   return (
-    <div className="min-h-screen flex bg-slate-950 text-slate-100 font-sans">
+    <div className="min-h-screen flex bg-background text-foreground font-sans selection:bg-primary/20 selection:text-primary">
       {/* Sidebar - Desktop */}
       <aside 
-        className={`border-r border-slate-900 bg-slate-950/80 backdrop-blur-md flex flex-col justify-between hidden md:flex transition-all duration-300 relative ${
+        className={`border-r border-border bg-surface flex flex-col justify-between hidden md:flex transition-all duration-200 relative ${
           isCollapsed ? 'w-20' : 'w-64'
         }`}
       >
         <div>
-          {/* Logo & Toggle */}
-          <div className="h-16 flex items-center justify-between px-5 border-b border-slate-900">
+          {/* Workspace Switcher header */}
+          <div className="h-16 flex items-center justify-between px-5 border-b border-border relative">
             {!isCollapsed && (
-              <div className="flex items-center gap-2">
-                <img src="/logo.png" alt="VESA OS" className="h-7 w-auto object-contain" />
-                <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full font-medium shrink-0">
-                  Admin
-                </span>
-              </div>
+              <button 
+                onClick={() => setShowWorkspaceSwitcher(!showWorkspaceSwitcher)}
+                className="flex items-center gap-2 px-2 py-1.5 hover:bg-card border border-transparent hover:border-border rounded-[14px] transition-all text-left w-full"
+              >
+                <div className="w-6 h-6 rounded-[8px] bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                  VS
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[11px] font-bold text-foreground leading-tight truncate">Vesa Studios</span>
+                  <span className="text-[8px] text-muted leading-tight truncate">Enterprise Console</span>
+                </div>
+              </button>
             )}
             {isCollapsed && (
               <div className="mx-auto">
-                <img src="/favicon.ico" alt="V" className="h-6 w-6 object-contain" />
+                <div className="w-8 h-8 rounded-[10px] bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-xs font-bold text-white shadow-md">
+                  V
+                </div>
               </div>
             )}
+            
             <button
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className="absolute -right-3.5 top-4.5 p-1 bg-slate-900 border border-slate-800 rounded-full hover:bg-slate-800 text-slate-400 hover:text-slate-200 transition-colors z-20 shadow-md"
+              className="absolute -right-3.5 top-4.5 p-1 bg-surface border border-border rounded-full hover:bg-card text-muted hover:text-foreground transition-colors z-20 shadow-md"
             >
-              {isCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+              {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
             </button>
+
+            {/* Dropdown Workspace Switcher */}
+            {showWorkspaceSwitcher && !isCollapsed && (
+              <div className="absolute top-14 left-4 right-4 bg-card border border-border rounded-[16px] p-2 shadow-2xl z-30 animate-scale-up space-y-1">
+                <div className="px-2.5 py-1.5 text-[9px] uppercase font-bold text-muted">Workspace Environments</div>
+                <button className="w-full flex items-center gap-2 p-2 bg-surface border border-border rounded-[10px] text-left">
+                  <div className="w-5 h-5 rounded-[6px] bg-primary flex items-center justify-center text-[9px] font-bold text-white shrink-0">P</div>
+                  <span className="text-xs font-semibold text-foreground">Production Hub</span>
+                </button>
+                <button className="w-full flex items-center gap-2 p-2 hover:bg-surface rounded-[10px] text-left text-muted">
+                  <div className="w-5 h-5 rounded-[6px] bg-slate-800 flex items-center justify-center text-[9px] font-bold text-slate-400 shrink-0">S</div>
+                  <span className="text-xs font-semibold">Staging Sandbox</span>
+                </button>
+              </div>
+            )}
           </div>
 
-          {/* Navigation */}
+          {/* Navigation Items */}
           <nav className="p-4 space-y-1.5">
             {menuItems.map((item) => (
               <Link
@@ -119,16 +167,16 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
           </nav>
         </div>
 
-        {/* User Footer Profile */}
-        <div className="p-4 border-t border-slate-900 flex flex-col gap-2.5">
+        {/* User profile footer */}
+        <div className="p-4 border-t border-border flex flex-col gap-2.5">
           <div className="flex items-center gap-3 px-2">
-            <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold uppercase text-slate-300 shrink-0">
+            <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-xs font-bold uppercase text-foreground shrink-0 shadow-inner">
               {name.slice(0, 2)}
             </div>
             {!isCollapsed && (
               <div className="flex flex-col min-w-0">
-                <span className="text-xs font-semibold text-slate-200 truncate">{name}</span>
-                <span className="text-[10px] text-slate-500 truncate">{user.email}</span>
+                <span className="text-xs font-bold text-foreground truncate">{name}</span>
+                <span className="text-[10px] text-muted truncate">{user.email}</span>
               </div>
             )}
           </div>
@@ -136,7 +184,7 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
           <form action={logoutAction}>
             <button
               type="submit"
-              className={`w-full flex items-center gap-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-950/20 rounded-lg transition-colors ${
+              className={`w-full flex items-center gap-3 py-2 text-xs font-semibold text-danger hover:text-red-400 hover:bg-red-950/20 rounded-[12px] border border-transparent hover:border-red-950/30 transition-colors ${
                 isCollapsed ? 'justify-center px-0' : 'px-3'
               }`}
               title="Sign Out"
@@ -156,16 +204,16 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
         >
           <aside 
             onClick={(e) => e.stopPropagation()}
-            className="w-64 h-full border-r border-slate-900 bg-slate-950 flex flex-col justify-between animate-slide-in"
+            className="w-64 h-full border-r border-border bg-background flex flex-col justify-between animate-slide-in animate-fade-in"
           >
             <div>
-              <div className="h-16 flex items-center gap-2.5 px-6 border-b border-slate-900">
-                <img src="/logo.png" alt="VESA" className="h-7 w-auto" />
-                <span className="text-[9px] bg-blue-500/10 text-blue-400 border border-blue-500/20 px-1.5 py-0.5 rounded-full font-medium">
-                  Admin
-                </span>
+              <div className="h-16 flex items-center gap-2.5 px-6 border-b border-border">
+                <div className="w-6 h-6 rounded-[8px] bg-gradient-to-tr from-primary to-secondary flex items-center justify-center text-[10px] font-bold text-white shrink-0">
+                  VS
+                </div>
+                <h2 className="text-xs font-bold text-foreground">Vesa Studios</h2>
               </div>
-              <nav className="p-4 space-y-1">
+              <nav className="p-4 space-y-1.5">
                 {menuItems.map((item) => (
                   <Link
                     key={item.href}
@@ -180,20 +228,20 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
               </nav>
             </div>
 
-            <div className="p-4 border-t border-slate-900 flex flex-col gap-2.5">
+            <div className="p-4 border-t border-border flex flex-col gap-2.5">
               <div className="flex items-center gap-3 px-2">
-                <div className="w-8 h-8 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-xs font-semibold uppercase text-slate-300">
+                <div className="w-8 h-8 rounded-full bg-card border border-border flex items-center justify-center text-xs font-bold uppercase text-foreground">
                   {name.slice(0, 2)}
                 </div>
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-semibold text-slate-200 truncate">{name}</span>
-                  <span className="text-[10px] text-slate-500 truncate">{user.email}</span>
+                  <span className="text-xs font-bold text-foreground truncate">{name}</span>
+                  <span className="text-[10px] text-muted truncate">{user.email}</span>
                 </div>
               </div>
               <form action={logoutAction}>
                 <button
                   type="submit"
-                  className="w-full flex items-center gap-3 px-3 py-2 text-xs font-medium text-red-400 hover:text-red-300 hover:bg-red-950/20 rounded-lg transition-colors"
+                  className="w-full flex items-center gap-3 px-3 py-2 text-xs font-semibold text-danger hover:text-red-400 hover:bg-red-950/20 rounded-[12px] transition-colors"
                 >
                   <LogOut className="w-3.5 h-3.5" />
                   Sign Out
@@ -205,18 +253,27 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
       )}
 
       {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0 bg-slate-950">
-        {/* Top Navbar */}
-        <header className="h-16 border-b border-slate-900 px-6 flex items-center justify-between bg-slate-950/40 backdrop-blur-md z-10 sticky top-0">
-          <div className="flex items-center gap-4">
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        {/* Top Sticky Navbar */}
+        <header className="h-16 border-b border-border px-6 flex items-center justify-between bg-background/60 backdrop-blur-md z-10 sticky top-0">
+          <div className="flex items-center gap-3 min-w-0">
             <button
               onClick={() => setIsMobileOpen(true)}
-              className="p-1.5 hover:bg-slate-900 rounded-lg text-slate-400 hover:text-slate-200 md:hidden transition-colors"
+              className="p-1.5 hover:bg-card border border-transparent hover:border-border rounded-[10px] text-muted hover:text-foreground md:hidden transition-all"
             >
               <Menu className="w-5 h-5" />
             </button>
             
-            {/* Search Shortcut Bar */}
+            {/* Breadcrumbs */}
+            <div className="items-center gap-1.5 text-xs text-muted hidden sm:flex shrink-0">
+              <span className="font-semibold text-slate-500">VESA OS</span>
+              {getBreadcrumbs()}
+            </div>
+            <span className="text-xs font-semibold text-foreground sm:hidden truncate">VESA OS</span>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            {/* Search Trigger Button */}
             <button 
               onClick={() => {
                 const event = new KeyboardEvent('keydown', {
@@ -226,20 +283,24 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
                 });
                 window.dispatchEvent(event);
               }}
-              className="flex items-center gap-2 px-3 py-1.5 bg-slate-900 border border-slate-800 hover:border-slate-750 text-slate-400 hover:text-slate-300 rounded-xl transition-all text-xs text-left w-48 sm:w-64"
+              className="flex items-center gap-2 px-3 py-1.5 bg-card hover:bg-surface border border-border hover:border-border text-muted hover:text-foreground rounded-[14px] transition-all text-xs text-left w-36 sm:w-48 shadow-inner"
             >
               <Search className="w-3.5 h-3.5 text-slate-500" />
-              <span>Search everywhere...</span>
-              <span className="ml-auto text-[9px] bg-slate-800 px-1.5 py-0.5 rounded border border-slate-700 font-semibold text-slate-500">⌘K</span>
+              <span className="truncate">Search commands...</span>
+              <span className="ml-auto text-[9px] bg-background px-1.5 py-0.5 rounded border border-border font-semibold text-slate-500">⌘K</span>
             </button>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <span className="text-[10px] text-slate-500 hidden sm:inline font-mono uppercase tracking-wider">Production Platform</span>
-            <div className="h-4 w-px bg-slate-900 hidden sm:block" />
+
+            {/* Notification Bell */}
+            <button className="p-2 hover:bg-card border border-transparent hover:border-border rounded-[12px] text-muted hover:text-foreground transition-all relative">
+              <Bell className="w-4 h-4" />
+              <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-danger animate-pulse" />
+            </button>
+
+            <div className="h-4 w-px bg-border" />
+            
             <Link
               href="/admin/settings"
-              className="p-2 hover:bg-slate-900 rounded-xl text-slate-400 hover:text-slate-200 transition-colors"
+              className="p-2 hover:bg-card border border-transparent hover:border-border rounded-[12px] text-muted hover:text-foreground transition-all"
             >
               <Settings className="w-4 h-4" />
             </Link>
@@ -247,7 +308,7 @@ export function AdminLayoutClient({ children, user, logoutAction }: AdminLayoutC
         </header>
 
         {/* Children Container */}
-        <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto">
+        <main className="flex-1 p-6 overflow-y-auto max-w-7xl w-full mx-auto animate-fade-in">
           {children}
         </main>
       </div>

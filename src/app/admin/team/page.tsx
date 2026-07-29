@@ -10,6 +10,7 @@ export default async function AdminTeamPage() {
     id: m.id,
     name: m.name,
     email: m.email,
+    role: m.role,
     createdAt: m.createdAt,
   }));
 

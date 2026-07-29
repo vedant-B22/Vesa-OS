@@ -127,22 +127,22 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
   };
 
   return (
-    <div className="space-y-8 animate-fade-in relative">
+    <div className="space-y-8 animate-fade-in relative font-sans">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-white">Billing & Invoices</h1>
-        <p className="text-slate-400 text-sm">Issue design invoices, record client payments, and track agency earnings.</p>
+        <p className="text-muted text-sm font-semibold">Issue design invoices, record client payments, and track agency earnings.</p>
       </div>
 
       {/* Global Alerts */}
       {errorMsg && (
-        <div className="p-3.5 bg-red-950/40 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
+        <div className="p-3.5 bg-danger/10 border border-danger/20 rounded-[14px] text-xs text-danger flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2">
+        <div className="p-3.5 bg-success/10 border border-success/20 rounded-[14px] text-xs text-success flex items-center gap-2">
           <CheckCircle className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
@@ -150,32 +150,32 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
 
       {/* Grid Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div className="p-5 bg-slate-900/40 backdrop-blur-sm border border-slate-900 rounded-2xl flex items-center justify-between shadow-md">
+        <div className="p-5 bg-surface border border-border rounded-[20px] flex items-center justify-between shadow-md">
           <div className="space-y-1">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Gross Invoiced</span>
+            <span className="text-[10px] uppercase font-bold text-muted">Gross Invoiced</span>
             <p className="text-xl font-bold text-white">${totalInvoiced.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
-          <div className="p-3 rounded-xl border border-slate-850 bg-slate-900 text-blue-400">
+          <div className="p-3 rounded-[12px] border border-border bg-card text-primary shrink-0">
             <DollarSign className="w-4.5 h-4.5" />
           </div>
         </div>
 
-        <div className="p-5 bg-slate-900/40 backdrop-blur-sm border border-slate-900 rounded-2xl flex items-center justify-between shadow-md">
+        <div className="p-5 bg-surface border border-border rounded-[20px] flex items-center justify-between shadow-md">
           <div className="space-y-1">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Collected Income</span>
-            <p className="text-xl font-bold text-emerald-400">${totalCollected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <span className="text-[10px] uppercase font-bold text-muted">Collected Income</span>
+            <p className="text-xl font-bold text-success">${totalCollected.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
-          <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-400">
+          <div className="p-3 rounded-[12px] border border-success/20 bg-success/10 text-success shrink-0">
             <TrendingUp className="w-4.5 h-4.5" />
           </div>
         </div>
 
-        <div className="p-5 bg-slate-900/40 backdrop-blur-sm border border-slate-900 rounded-2xl flex items-center justify-between shadow-md">
+        <div className="p-5 bg-surface border border-border rounded-[20px] flex items-center justify-between shadow-md">
           <div className="space-y-1">
-            <span className="text-[10px] uppercase font-bold text-slate-500">Outstanding Balances</span>
-            <p className="text-xl font-bold text-amber-500">${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
+            <span className="text-[10px] uppercase font-bold text-muted">Outstanding Balances</span>
+            <p className="text-xl font-bold text-warning">${totalOutstanding.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</p>
           </div>
-          <div className="p-3 rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-400">
+          <div className="p-3 rounded-[12px] border border-warning/20 bg-warning/10 text-warning shrink-0">
             <Layers className="w-4.5 h-4.5" />
           </div>
         </div>
@@ -186,22 +186,22 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
         
         {/* Invoices List Panel (2/3 width) */}
         <div className="lg:col-span-2 space-y-4">
-          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-slate-900/10 border border-slate-900 p-3.5 rounded-2xl">
-            <div className="flex items-center gap-2.5 px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl w-full sm:max-w-xs text-slate-400">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-between bg-surface border border-border p-3.5 rounded-[20px] shadow-sm">
+            <div className="flex items-center gap-2.5 px-3 py-2 bg-background border border-border rounded-[14px] w-full sm:max-w-xs text-muted">
               <Search className="w-4 h-4 text-slate-500 shrink-0" />
               <input
                 type="text"
                 placeholder="Search by client or invoice ID..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="bg-transparent text-xs outline-none text-slate-200 w-full placeholder-slate-500"
+                className="bg-transparent text-xs outline-none text-foreground w-full placeholder-slate-500 font-semibold"
               />
             </div>
             
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 outline-none w-full sm:w-auto"
+              className="px-3 py-2 bg-background border border-border rounded-[14px] text-xs text-slate-350 outline-none w-full sm:w-auto font-semibold"
             >
               <option value="ALL">All Statuses</option>
               <option value="DRAFT">Draft</option>
@@ -211,10 +211,10 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
             </select>
           </div>
 
-          <div className="bg-slate-900/20 border border-slate-900 rounded-2xl overflow-hidden shadow-lg divide-y divide-slate-900">
+          <div className="bg-surface border border-border rounded-[20px] overflow-hidden shadow-lg divide-y divide-border">
             {filteredInvoices.length > 0 ? (
               filteredInvoices.map((invoice) => (
-                <div key={invoice.id} className="p-5 flex items-center justify-between hover:bg-slate-900/20 transition-colors">
+                <div key={invoice.id} className="p-5 flex items-center justify-between hover:bg-card/40 transition-colors">
                   <div className="space-y-1.5 min-w-0 pr-4">
                     <div className="flex items-center gap-2">
                       <h3 className="text-xs font-bold text-slate-400 font-mono truncate">INV-{invoice.id.slice(0, 8).toUpperCase()}</h3>
@@ -223,24 +223,24 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
                       </span>
                     </div>
                     <div className="space-y-0.5">
-                      <p className="text-sm font-semibold text-slate-200 truncate">{invoice.client.name}</p>
-                      <span className="text-[10px] text-slate-500 block">Due Date: {new Date(invoice.dueDate).toLocaleDateString()}</span>
+                      <p className="text-sm font-bold text-foreground truncate">{invoice.client.name}</p>
+                      <span className="text-[10px] text-muted block font-semibold">Due Date: {new Date(invoice.dueDate).toLocaleDateString()}</span>
                     </div>
                   </div>
 
                   <div className="flex items-center gap-4 flex-shrink-0">
-                    <p className="text-sm font-bold text-slate-200">${invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
+                    <p className="text-sm font-bold text-foreground">${invoice.amount.toLocaleString(undefined, { minimumFractionDigits: 2 })}</p>
                     
                     {invoice.status !== 'PAID' && (
                       <button
                         onClick={() => setSelectedInvoice(invoice)}
-                        className="bg-blue-600/10 hover:bg-blue-600 border border-blue-500/20 hover:border-transparent text-blue-400 hover:text-white text-[10px] font-bold px-3 py-1.5 rounded-xl transition-all"
+                        className="bg-primary/10 hover:bg-primary border border-primary/20 hover:border-transparent text-primary hover:text-white text-[10px] font-bold px-3 py-1.5 rounded-[12px] transition-all"
                       >
                         Record Payment
                       </button>
                     )}
                     {invoice.status === 'PAID' && (
-                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/10 border border-emerald-500/25 px-3 py-1.5 rounded-xl">
+                      <span className="text-[10px] text-success font-bold bg-success/10 border border-success/20 px-3 py-1.5 rounded-[12px]">
                         Paid Complete
                       </span>
                     )}
@@ -248,7 +248,7 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
                 </div>
               ))
             ) : (
-              <div className="p-16 text-center text-slate-500 text-sm">
+              <div className="p-16 text-center text-slate-500 text-xs shadow-inner">
                 No matching invoices found.
               </div>
             )}
@@ -257,19 +257,19 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
 
         {/* Generate Invoice Form (1/3 width) */}
         <div>
-          <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-5 space-y-4 shadow-lg sticky top-24">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-900">
-              <CreditCard className="w-4 h-4 text-blue-400" />
+          <div className="bg-surface border border-border rounded-[20px] p-5 space-y-4 shadow-lg sticky top-24">
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <CreditCard className="w-4 h-4 text-primary" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">New Invoice</h2>
             </div>
 
             <form onSubmit={handleCreateInvoice} className="space-y-3.5">
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Select Client</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Select Client</label>
                 <select
                   name="clientId"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-350 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                 >
                   <option value="">-- Choose Client --</option>
                   {clients.map((c) => (
@@ -281,32 +281,32 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Invoice Amount ($)</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Invoice Amount ($)</label>
                 <input
                   name="amount"
                   type="number"
                   step="0.01"
                   required
                   placeholder="e.g. 2500.00"
-                  className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-foreground placeholder-slate-600 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Due Date</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Due Date</label>
                 <input
                   name="dueDate"
                   type="date"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Status</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Status</label>
                 <select
                   name="status"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                 >
                   <option value="SENT">Sent (Awaiting Payment)</option>
                   <option value="DRAFT">Draft</option>
@@ -316,7 +316,7 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 disabled:opacity-55"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-blue-600 hover:from-blue-500 hover:to-blue-600 text-white text-xs font-bold rounded-[14px] shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2 disabled:opacity-55"
               >
                 {isPending ? (
                   <>
@@ -339,22 +339,22 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
       {/* Record Payment Dialog Modal */}
       {selectedInvoice && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-4 animate-scale-up">
-            <div className="flex justify-between items-start pb-2 border-b border-slate-800">
+          <div className="w-full max-w-sm bg-surface border border-border rounded-[20px] p-6 shadow-2xl space-y-4 animate-scale-up">
+            <div className="flex justify-between items-start pb-2 border-b border-border">
               <div>
                 <h3 className="text-base font-bold text-white font-mono">INV-{selectedInvoice.id.slice(0, 8).toUpperCase()}</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">Recording payment from: {selectedInvoice.client.name}</p>
+                <p className="text-[10px] text-muted mt-0.5 font-semibold">Recording payment from: {selectedInvoice.client.name}</p>
               </div>
               <button
                 onClick={() => setSelectedInvoice(null)}
-                className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+                className="p-1 hover:bg-card border border-transparent hover:border-border rounded-[8px] text-muted hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
 
             {paymentErrorMsg && (
-              <div className="p-3 bg-red-950/30 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
+              <div className="p-3 bg-danger/10 border border-danger/25 rounded-[12px] text-xs text-danger flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{paymentErrorMsg}</span>
               </div>
@@ -362,11 +362,11 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
 
             <form onSubmit={handleRecordPayment} className="space-y-4">
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Payment Method</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Payment Method</label>
                 <select
                   name="method"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-350 outline-none"
                 >
                   <option value="Stripe">Stripe Card Payment</option>
                   <option value="Bank Transfer">Bank Wire Transfer</option>
@@ -376,22 +376,22 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Amount Paid ($)</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Amount Paid ($)</label>
                 <input
                   name="amount"
                   type="number"
                   step="0.01"
                   defaultValue={selectedInvoice.amount}
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-100"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-foreground outline-none font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Status</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Status</label>
                 <select
                   name="status"
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 outline-none"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 outline-none"
                 >
                   <option value="SUCCESS">Success (Completed)</option>
                   <option value="PENDING">Pending Approval</option>
@@ -402,7 +402,7 @@ export function BillingClient({ initialInvoices, clients }: BillingClientProps) 
               <button
                 type="submit"
                 disabled={isPaymentPending}
-                className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-semibold rounded-xl shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-55"
+                className="w-full py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold rounded-[14px] shadow-lg transition-all flex items-center justify-center gap-1.5 disabled:opacity-55"
               >
                 {isPaymentPending ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin" />

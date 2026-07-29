@@ -109,7 +109,6 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
       } else {
         setSuccessMsg('Project created successfully!');
         form.reset();
-        // Refresh local state manually by querying or appending (standard Next.js revalidation handles it on page transition, but we trigger manual updates for UX speed)
         window.location.reload();
       }
     });
@@ -144,7 +143,6 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
         setTaskErrorMsg(res.error);
       } else {
         form.reset();
-        // Reload project to update list
         window.location.reload();
       }
     });
@@ -208,33 +206,33 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-white">Project Tracker</h1>
-        <p className="text-slate-400 text-sm">Create client workspaces, track deliverables, and manage actionable sprint tasks.</p>
+        <p className="text-muted text-sm">Create client workspaces, track build progress, and manage sprint task checklists.</p>
       </div>
 
       {/* Notifications */}
       {errorMsg && (
-        <div className="p-3.5 bg-red-950/40 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
+        <div className="p-3.5 bg-danger/10 border border-danger/20 rounded-[14px] text-xs text-danger flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{errorMsg}</span>
         </div>
       )}
       {successMsg && (
-        <div className="p-3.5 bg-emerald-950/40 border border-emerald-500/20 rounded-xl text-xs text-emerald-400 flex items-center gap-2">
+        <div className="p-3.5 bg-success/10 border border-success/20 rounded-[14px] text-xs text-success flex items-center gap-2">
           <CheckSquare className="w-4 h-4 shrink-0" />
           <span>{successMsg}</span>
         </div>
       )}
 
       {/* Search & Filters */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 bg-slate-900/20 border border-slate-900 p-3.5 rounded-2xl">
-        <div className="flex items-center gap-2.5 px-3 py-2 bg-slate-950/60 border border-slate-800 rounded-xl w-full sm:max-w-xs text-slate-400">
+      <div className="flex flex-col sm:flex-row items-center gap-3 bg-surface border border-border p-3.5 rounded-[20px] shadow-sm">
+        <div className="flex items-center gap-2.5 px-3 py-2 bg-background border border-border rounded-[14px] w-full sm:max-w-xs text-muted">
           <Search className="w-4 h-4 text-slate-500 shrink-0" />
           <input
             type="text"
             placeholder="Search projects..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="bg-transparent text-xs outline-none text-slate-200 w-full placeholder-slate-500"
+            className="bg-transparent text-xs outline-none text-foreground w-full placeholder-slate-500 font-semibold"
           />
         </div>
 
@@ -243,7 +241,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 outline-none w-full sm:w-auto"
+            className="px-3 py-2 bg-background border border-border rounded-[14px] text-xs text-slate-300 outline-none w-full sm:w-auto font-semibold"
           >
             <option value="ALL">All Statuses</option>
             <option value="PLANNING">Planning</option>
@@ -260,18 +258,18 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
         
         {/* Left Side: Projects Grid List */}
         <div className="lg:col-span-2 space-y-4">
-          <h2 className="text-sm font-semibold tracking-wide text-slate-300 uppercase font-medium">All Projects</h2>
+          <h2 className="text-sm font-semibold tracking-wide text-muted uppercase font-medium">All Projects</h2>
 
           {filteredProjects.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredProjects.map((project) => (
                 <div
                   key={project.id}
-                  className="bg-slate-900/40 border border-slate-900 rounded-2xl p-5 space-y-4 hover:border-slate-850 transition-colors flex flex-col justify-between group shadow-lg"
+                  className="bg-surface border border-border rounded-[20px] p-5 space-y-4 hover:border-border/80 transition-all flex flex-col justify-between group shadow-lg"
                 >
                   <div className="space-y-2">
                     <div className="flex justify-between items-start">
-                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 bg-slate-950 px-2 py-0.5 rounded border border-slate-900 truncate max-w-[150px]">
+                      <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400 bg-background px-2 py-0.5 rounded border border-border truncate max-w-[150px]">
                         {project.client.name}
                       </span>
                       <span className={`text-[9px] font-bold uppercase px-2 py-0.5 rounded border ${statusColors[project.status]}`}>
@@ -280,31 +278,31 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
                     </div>
 
                     <div>
-                      <h3 className="text-base font-semibold text-slate-200 group-hover:text-blue-400 transition-colors">
+                      <h3 className="text-base font-semibold text-slate-200 group-hover:text-primary transition-colors leading-tight">
                         {project.name}
                       </h3>
-                      <p className="text-xs text-slate-400 line-clamp-2 mt-1">{project.description || 'No description provided.'}</p>
+                      <p className="text-xs text-muted line-clamp-2 mt-1 leading-relaxed">{project.description || 'No description provided.'}</p>
                     </div>
                   </div>
 
                   <div className="space-y-3.5 pt-2">
                     {/* Progress Bar */}
-                    <div className="space-y-1">
+                    <div className="space-y-1 border-t border-border/40 pt-2">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-slate-500 text-[10px]">COMPLETION</span>
-                        <span className="font-semibold text-slate-300">{project.progress}%</span>
+                        <span className="text-muted text-[9px] font-bold uppercase">Completion</span>
+                        <span className="font-semibold text-slate-350">{project.progress}%</span>
                       </div>
-                      <div className="w-full h-1.5 bg-slate-950 rounded-full overflow-hidden border border-slate-900/30">
+                      <div className="w-full h-1 bg-background rounded-full overflow-hidden border border-border">
                         <div
-                          className="h-full bg-blue-500 rounded-full transition-all duration-300"
+                          className="h-full bg-primary rounded-full transition-all duration-300"
                           style={{ width: `${project.progress}%` }}
                         />
                       </div>
                     </div>
 
                     {/* Timeline dates & Manage tasks */}
-                    <div className="flex justify-between items-center pt-2.5 border-t border-slate-900/50">
-                      <div className="flex items-center gap-1.5 text-[10px] text-slate-400">
+                    <div className="flex justify-between items-center pt-2.5 border-t border-border">
+                      <div className="flex items-center gap-1.5 text-[10px] text-muted font-medium">
                         <Calendar className="w-3.5 h-3.5 text-slate-500" />
                         <span>
                           {project.startDate ? new Date(project.startDate).toLocaleDateString() : 'TBD'} -{' '}
@@ -315,15 +313,15 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => setSelectedProject(project)}
-                          className="flex items-center gap-1 text-[10px] bg-slate-900 hover:bg-slate-850 text-blue-400 hover:text-blue-300 border border-slate-850 px-2 py-1 rounded-lg font-semibold transition-colors"
+                          className="flex items-center gap-1 text-[10px] bg-background hover:bg-card text-primary hover:text-blue-400 border border-border px-2 py-1 rounded-[10px] font-bold transition-all"
                         >
                           Tasks ({project.tasks?.filter(t => t.isCompleted).length || 0}/{project.tasks?.length || 0})
-                          <ArrowRight className="w-3 h-3" />
+                          <ArrowRight className="w-3.5 h-3.5" />
                         </button>
 
                         <button
                           onClick={() => handleDeleteProject(project.id)}
-                          className="p-1.5 text-slate-500 hover:text-red-400 hover:bg-red-950/20 rounded-lg transition-colors"
+                          className="p-1.5 text-muted hover:text-danger hover:bg-red-950/20 rounded-[10px] border border-transparent hover:border-red-950/30 transition-colors"
                           title="Delete Project"
                           disabled={isPending}
                         >
@@ -337,7 +335,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
               ))}
             </div>
           ) : (
-            <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-16 text-center text-slate-500 text-sm">
+            <div className="bg-surface border border-border rounded-[20px] p-16 text-center text-slate-500 text-xs shadow-inner">
               No matching projects found.
             </div>
           )}
@@ -345,19 +343,19 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
 
         {/* Right Side: Create Project Form */}
         <div>
-          <div className="bg-slate-900/40 border border-slate-900 rounded-2xl p-5 space-y-4 shadow-lg sticky top-24">
-            <div className="flex items-center gap-2 pb-2 border-b border-slate-900">
-              <FolderKanban className="w-4 h-4 text-blue-400" />
+          <div className="bg-surface border border-border rounded-[20px] p-5 space-y-4 shadow-lg sticky top-24">
+            <div className="flex items-center gap-2 pb-2 border-b border-border">
+              <FolderKanban className="w-4 h-4 text-primary" />
               <h2 className="text-xs font-bold uppercase tracking-wider text-slate-200">New Project</h2>
             </div>
 
             <form onSubmit={handleCreateProject} className="space-y-3.5">
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Select Client</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Select Client</label>
                 <select
                   name="clientId"
                   required
-                  className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                 >
                   <option value="">-- Choose Client --</option>
                   {clients.map((c) => (
@@ -369,32 +367,32 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Project Name</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Project Name</label>
                 <input
                   name="name"
                   type="text"
                   required
                   placeholder="e.g. Website Rebranding"
-                  className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-foreground placeholder-slate-600 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                 />
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Description</label>
+                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Description</label>
                 <textarea
                   name="description"
                   rows={3}
                   placeholder="Scope of work details..."
-                  className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors resize-none"
+                  className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-foreground placeholder-slate-600 focus:outline-none focus:border-primary/80 transition-colors resize-none font-semibold"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Status</label>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Status</label>
                   <select
                     name="status"
-                    className="w-full px-3.5 py-2.5 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                   >
                     <option value="PLANNING">Planning</option>
                     <option value="IN_PROGRESS">In Progress</option>
@@ -405,33 +403,33 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Progress (%)</label>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Progress (%)</label>
                   <input
                     name="progress"
                     type="number"
                     min={0}
                     max={100}
                     defaultValue={0}
-                    className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-foreground focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">Start Date</label>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Start Date</label>
                   <input
                     name="startDate"
                     type="date"
-                    className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">End Date</label>
+                  <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">End Date</label>
                   <input
                     name="endDate"
                     type="date"
-                    className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80 transition-colors"
+                    className="w-full px-3.5 py-2.5 bg-background border border-border rounded-[14px] text-xs text-slate-300 focus:outline-none focus:border-primary/80 transition-colors font-semibold"
                   />
                 </div>
               </div>
@@ -439,7 +437,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
               <button
                 type="submit"
                 disabled={isPending}
-                className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl shadow-lg shadow-blue-600/10 transition-all flex items-center justify-center gap-2 disabled:opacity-55"
+                className="w-full py-2.5 px-4 bg-gradient-to-r from-primary to-blue-600 hover:from-blue-500 hover:to-blue-600 text-white text-xs font-bold rounded-[14px] shadow-lg shadow-primary/10 transition-all flex items-center justify-center gap-2 disabled:opacity-55"
               >
                 {isPending ? (
                   <>
@@ -462,17 +460,17 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
       {/* Relational Tasks Modal/Drawer */}
       {selectedProject && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-lg bg-slate-900 border border-slate-800 rounded-3xl p-6 shadow-2xl space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-[20px] p-6 shadow-2xl space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
             
             {/* Modal Header */}
-            <div className="flex justify-between items-start pb-3 border-b border-slate-800">
+            <div className="flex justify-between items-start pb-3 border-b border-border">
               <div>
-                <h3 className="text-base font-bold text-white">Project Task Sprint</h3>
-                <p className="text-[10px] text-slate-400 mt-0.5">Project: {selectedProject.name}</p>
+                <h3 className="text-sm font-bold text-white">Project Tasks Checklist</h3>
+                <p className="text-[10px] text-muted mt-0.5">Project: {selectedProject.name}</p>
               </div>
               <button
                 onClick={() => setSelectedProject(null)}
-                className="p-1 hover:bg-slate-800 rounded-lg text-slate-400 hover:text-slate-200 transition-colors"
+                className="p-1 hover:bg-card border border-transparent hover:border-border rounded-[8px] text-muted hover:text-foreground transition-colors"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -480,25 +478,25 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
 
             {/* Task Error Warning */}
             {taskErrorMsg && (
-              <div className="p-3 bg-red-950/30 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-center gap-2">
+              <div className="p-3 bg-danger/10 border border-danger/25 rounded-[12px] text-xs text-danger flex items-center gap-2">
                 <AlertCircle className="w-3.5 h-3.5 shrink-0" />
                 <span>{taskErrorMsg}</span>
               </div>
             )}
 
             {/* Quick Task Creation Form */}
-            <form onSubmit={handleAddTask} className="flex gap-2 bg-slate-950/60 p-2 border border-slate-850 rounded-2xl">
+            <form onSubmit={handleAddTask} className="flex gap-2 bg-background p-2 border border-border rounded-[16px]">
               <input
                 name="title"
                 type="text"
                 required
-                placeholder="Add task to sprint..."
-                className="w-full bg-transparent text-xs text-slate-200 outline-none placeholder-slate-500 px-2"
+                placeholder="Add task to sprint... (e.g. Code auth forms)"
+                className="w-full bg-transparent text-xs text-foreground outline-none placeholder-slate-500 px-2 font-semibold"
               />
               <select
                 name="priority"
                 defaultValue="MEDIUM"
-                className="bg-slate-900 border border-slate-800 text-[10px] text-slate-300 rounded-lg px-2 outline-none"
+                className="bg-card border border-border text-[9px] font-bold text-slate-300 rounded-[10px] px-2 outline-none"
               >
                 <option value="LOW">Low</option>
                 <option value="MEDIUM">Med</option>
@@ -507,7 +505,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
               <button
                 type="submit"
                 disabled={isTaskPending}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-xl text-xs font-semibold shrink-0 transition-colors flex items-center gap-1 disabled:opacity-55"
+                className="bg-primary hover:bg-blue-500 text-white px-3 py-1.5 rounded-[10px] text-xs font-bold shrink-0 transition-colors flex items-center gap-1 disabled:opacity-55"
               >
                 {isTaskPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
                 <span>Add</span>
@@ -515,28 +513,28 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
             </form>
 
             {/* Tasks List */}
-            <div className="space-y-2.5 max-h-[45vh] overflow-y-auto pr-1">
+            <div className="space-y-2 max-h-[45vh] overflow-y-auto pr-1">
               {selectedProject.tasks && selectedProject.tasks.length > 0 ? (
                 selectedProject.tasks.map((task) => (
                   <div
                     key={task.id}
-                    className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl flex items-center justify-between hover:border-slate-800 transition-all"
+                    className="p-3.5 bg-background border border-border hover:border-border/80 rounded-[16px] flex items-center justify-between hover:border-slate-800 transition-all"
                   >
                     <button
                       onClick={() => handleToggleTask(task.id)}
                       className="flex items-center gap-3 text-left min-w-0"
                     >
                       {task.isCompleted ? (
-                        <CheckSquare className="w-4 h-4 text-emerald-500 shrink-0" />
+                        <CheckSquare className="w-4 h-4 text-success shrink-0" />
                       ) : (
-                        <Square className="w-4 h-4 text-slate-600 shrink-0" />
+                        <Square className="w-4 h-4 text-slate-700 shrink-0" />
                       )}
                       <div className="space-y-0.5">
-                        <span className={`text-xs block leading-tight font-medium ${task.isCompleted ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
+                        <span className={`text-xs block leading-tight font-semibold ${task.isCompleted ? 'text-slate-500 line-through' : 'text-slate-200'}`}>
                           {task.title}
                         </span>
-                        <div className="flex items-center gap-1.5 text-[9px] text-slate-500">
-                          <Tag className="w-3 h-3 text-slate-600" />
+                        <div className="flex items-center gap-1.5 text-[8px] text-muted">
+                          <Tag className="w-3 h-3 text-slate-650" />
                           <span className={`px-1.5 py-0.2 rounded border ${priorityColors[task.priority]}`}>{task.priority}</span>
                         </div>
                       </div>
@@ -544,7 +542,7 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
 
                     <button
                       onClick={() => handleDeleteTask(task.id)}
-                      className="p-1 text-slate-600 hover:text-red-400 hover:bg-red-950/20 rounded-lg transition-colors shrink-0"
+                      className="p-1 text-slate-600 hover:text-danger hover:bg-red-950/20 rounded-[8px] transition-colors shrink-0"
                       title="Delete Task"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -559,8 +557,8 @@ export function AdminProjectsClient({ initialProjects, clients }: AdminProjectsC
             </div>
 
             {/* Modal Footer */}
-            <div className="pt-2 flex justify-end text-[10px] text-slate-500">
-              <span>Sprint checklist updates are saved instantly to database.</span>
+            <div className="pt-2 flex justify-end text-[9px] uppercase font-bold text-muted">
+              <span>Sync complete</span>
             </div>
 
           </div>
