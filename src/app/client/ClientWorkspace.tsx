@@ -1,13 +1,16 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useState, useTransition, useEffect } from 'react';
 import Chat from '@/components/shared/Chat';
 import FileManager from '@/components/shared/FileManager';
+import { createClient } from '@/lib/supabase/client';
 import {
   approveClientDeliverable,
   analyzeRawFeedbackAction,
   submitStructuredRevisionAction,
   uploadClientVoiceNoteAction,
+  analyzeVoiceFeedbackAction,
+  submitVoiceRevisionAction,
 } from './actions';
 import {
   FolderKanban,
@@ -72,6 +75,226 @@ export default function ClientWorkspace({
   const [activeTab, setActiveTab] = useState<'deliverables' | 'chat'>('deliverables');
 
   const activeProject = projects.find((p) => p.id === selectedProjectId);
+
+  // Real-time deliverable update subscriptions
+  useEffect(() => {
+    if (!selectedProjectId) return;
+    const supabase = createClient();
+    const channel = supabase.channel(`project-updates-${selectedProjectId}`, {
+      config: { broadcast: { self: false } }
+    });
+
+    channel
+      .on('broadcast', { event: 'deliverable_created' }, (payload) => {
+        const { deliverable } = payload.payload;
+        setProjects((prev) =>
+          prev.map((proj) => {
+            if (proj.id !== selectedProjectId) return proj;
+            const exists = proj.deliverables.some((d: any) => d.id === deliverable.id);
+            if (exists) return proj;
+            return {
+              ...proj,
+              deliverables: [deliverable, ...proj.deliverables]
+            };
+          })
+        );
+      })
+      .on('broadcast', { event: 'deliverable_deleted' }, (payload) => {
+        const { deliverableId } = payload.payload;
+        setProjects((prev) =>
+          prev.map((proj) => {
+            if (proj.id !== selectedProjectId) return proj;
+            return {
+              ...proj,
+              deliverables: proj.deliverables.filter((d: any) => d.id !== deliverableId)
+            };
+          })
+        );
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedProjectId]);
+
+  // Voice note recording states
+  const [voiceBlob, setVoiceBlob] = useState<Blob | null>(null);
+  const [voiceDuration, setVoiceDuration] = useState<number>(0);
+  const [recordingStartTime, setRecordingStartTime] = useState<number>(0);
+  const [voicePreviewUrl, setVoicePreviewUrl] = useState<string | null>(null);
+  const [voiceBase64, setVoiceBase64] = useState<string | null>(null);
+  const [voiceMimeType, setVoiceMimeType] = useState<string | null>(null);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [voiceMediaRecorder, setVoiceMediaRecorder] = useState<MediaRecorder | null>(null);
+  const [voiceChunks, setVoiceChunks] = useState<Blob[]>([]);
+
+  // Optional AI Assistant state for Voice Note
+  const [isVoiceAiLoading, setIsVoiceAiLoading] = useState(false);
+  const [voiceAiAnalysis, setVoiceAiAnalysis] = useState<any | null>(null);
+  const [voiceClarificationAnswers, setVoiceClarificationAnswers] = useState<Record<string, string>>({});
+  const [revisionTab, setRevisionTab] = useState<'voice' | 'text'>('voice');
+
+  const startVoiceRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const recorder = new MediaRecorder(stream);
+      const chunks: Blob[] = [];
+      setVoiceChunks([]);
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) chunks.push(e.data);
+      };
+
+      recorder.onstop = async () => {
+        const audioBlob = new Blob(chunks, { type: 'audio/webm' });
+        const blobUrl = URL.createObjectURL(audioBlob);
+        setVoiceBlob(audioBlob);
+        setVoicePreviewUrl(blobUrl);
+        setVoiceMimeType('audio/webm');
+
+        const durationSec = Math.round((Date.now() - recordingStartTime) / 1000);
+        setVoiceDuration(durationSec || 5);
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const base64String = (reader.result as string).split(',')[1];
+          setVoiceBase64(base64String);
+        };
+        reader.readAsDataURL(audioBlob);
+
+        stream.getTracks().forEach((track) => track.stop());
+      };
+
+      setRecordingStartTime(Date.now());
+      recorder.start();
+      setVoiceMediaRecorder(recorder);
+      setIsRecordingVoice(true);
+    } catch (err) {
+      console.error('Microphone access error:', err);
+    }
+  };
+
+  const stopVoiceRecording = () => {
+    if (voiceMediaRecorder && isRecordingVoice) {
+      voiceMediaRecorder.stop();
+      setIsRecordingVoice(false);
+    }
+  };
+
+  const deleteVoiceRecording = () => {
+    setVoiceBlob(null);
+    setVoicePreviewUrl(null);
+    setVoiceBase64(null);
+    setVoiceMimeType(null);
+    setVoiceDuration(0);
+    setVoiceAiAnalysis(null);
+    setVoiceClarificationAnswers({});
+    setAiError(null);
+  };
+
+  const handleCloseRevisionModal = () => {
+    setActiveDeliverableId(null);
+    setRawFeedback('');
+    setAiAnalysis(null);
+    setQuestionAnswers({});
+    setAiError(null);
+    deleteVoiceRecording();
+  };
+
+  const handleSubmitVoiceRevision = () => {
+    if (!activeDeliverableId || !voiceBase64) return;
+    startTransition(async () => {
+      const res = await submitVoiceRevisionAction(
+        activeDeliverableId,
+        'Voice Note feedback submitted.',
+        voiceBase64,
+        voiceDuration,
+        undefined,
+        undefined,
+        voiceMimeType || 'audio/webm'
+      );
+      if (res.success) {
+        setProjects((prev) =>
+          prev.map((proj) => ({
+            ...proj,
+            deliverables: proj.deliverables.map((del: any) =>
+              del.id === activeDeliverableId
+                ? { ...del, status: 'REVISION_REQUESTED' }
+                : del
+            ),
+          }))
+        );
+        handleCloseRevisionModal();
+      } else {
+        setAiError(res.error || 'Failed to submit voice revision.');
+      }
+    });
+  };
+
+  const handleVoiceAiAnalyze = async () => {
+    if (!voiceBase64 || !voiceMimeType) return;
+    setIsVoiceAiLoading(true);
+    setAiError(null);
+    try {
+      const res = await analyzeVoiceFeedbackAction(voiceBase64, voiceMimeType);
+      if (res.success && res.analysis) {
+        setVoiceAiAnalysis(res.analysis);
+        const answers: Record<string, string> = {};
+        res.analysis.questions.forEach((qObj: any) => {
+          answers[qObj.question] = '';
+        });
+        setVoiceClarificationAnswers(answers);
+      } else {
+        setAiError(res.error || 'AI voice note transcription failed.');
+      }
+    } catch (err: any) {
+      setAiError(err.message || 'AI analysis error.');
+    } finally {
+      setIsVoiceAiLoading(false);
+    }
+  };
+
+  const handleSubmitVoiceAiRevision = () => {
+    if (!activeDeliverableId || !voiceBase64 || !voiceAiAnalysis) return;
+    const unanswered = voiceAiAnalysis.questions.some((qObj: any) => !voiceClarificationAnswers[qObj.question]);
+    if (unanswered) {
+      setAiError('Please answer all follow-up questions before submitting.');
+      return;
+    }
+
+    startTransition(async () => {
+      const res = await submitVoiceRevisionAction(
+        activeDeliverableId,
+        voiceAiAnalysis.transcription || 'Audio revision note',
+        voiceBase64,
+        voiceDuration,
+        {
+          transcription: voiceAiAnalysis.transcription,
+          summary: voiceAiAnalysis.summary,
+          elementsToImprove: ['Voice Note'],
+          suggestedStyle: 'Modern',
+        },
+        voiceClarificationAnswers,
+        voiceMimeType || 'audio/webm'
+      );
+      if (res.success) {
+        setProjects((prev) =>
+          prev.map((proj) => ({
+            ...proj,
+            deliverables: proj.deliverables.map((del: any) =>
+              del.id === activeDeliverableId
+                ? { ...del, status: 'REVISION_REQUESTED' }
+                : del
+            ),
+          }))
+        );
+        handleCloseRevisionModal();
+      } else {
+        setAiError(res.error || 'Failed to submit revision.');
+      }
+    });
+  };
 
   // Approve Deliverable Handler
   const handleApprove = (deliverableId: string) => {
@@ -618,27 +841,21 @@ export default function ClientWorkspace({
 
       </div>
 
-      {/* AI REVISION MODAL / WIZARD OVERLAY */}
+      {/* REVISION MODAL / WIZARD OVERLAY */}
       {activeDeliverableId && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="w-full max-w-lg bg-surface border border-border rounded-[20px] p-6 shadow-2xl space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto">
+          <div className="w-full max-w-lg bg-surface border border-border rounded-[20px] p-6 shadow-2xl space-y-5 animate-scale-up max-h-[90vh] overflow-y-auto font-inter">
             
             {/* Modal Header */}
-            <div className="flex justify-between items-start pb-3 border-b border-slate-850">
+            <div className="flex justify-between items-start pb-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <div className="p-1.5 bg-gradient-to-tr from-amber-600 to-orange-600 rounded-lg">
-                  <Sparkles className="w-4 h-4 text-white" />
+                  <Sparkles className="w-4 h-4 text-white animate-pulse" />
                 </div>
-                <h3 className="text-base font-bold text-white">AI Feedback Assistant</h3>
+                <h3 className="text-base font-bold text-white font-geist">Send Revision Brief</h3>
               </div>
               <button
-                onClick={() => {
-                  setActiveDeliverableId(null);
-                  setRawFeedback('');
-                  setAiAnalysis(null);
-                  setQuestionAnswers({});
-                  setAiError(null);
-                }}
+                onClick={handleCloseRevisionModal}
                 className="text-xs text-slate-500 hover:text-slate-300 font-semibold"
               >
                 Cancel
@@ -646,154 +863,335 @@ export default function ClientWorkspace({
             </div>
 
             {aiError && (
-              <div className="p-3.5 bg-red-950/30 border border-red-500/20 rounded-xl text-xs text-red-400 flex items-start gap-2 animate-shake">
+              <div className="p-3.5 bg-danger/10 border border-danger/20 rounded-xl text-xs text-danger flex items-start gap-2">
                 <AlertTriangle className="w-4 h-4 mt-0.5 shrink-0" />
-                <div>
-                  <span className="font-semibold block mb-0.5">AI Analysis Failed</span>
-                  {aiError}
-                </div>
+                <span>{aiError}</span>
               </div>
             )}
 
-            {/* Step 1: Input raw feedback */}
-            {!aiAnalysis ? (
-              <div className="space-y-4">
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-slate-400">
-                    What adjustments are needed?
-                  </label>
-                  <p className="text-[10px] text-slate-500 leading-relaxed">
-                    Write your raw notes or complaints in your own words. The AI will parse it and formulate structured questions.
-                  </p>
-                </div>
-
-                <textarea
-                  value={rawFeedback}
-                  onChange={(e) => setRawFeedback(e.target.value)}
-                  rows={4}
-                  placeholder="e.g. The color scheme feels too corporate, I want a luxury Apple-like style. Also make the icons larger."
-                  className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors resize-none"
-                />
-
+            {/* Tab Selector: Voice Note vs Written Text */}
+            {!voiceAiAnalysis && !aiAnalysis && (
+              <div className="grid grid-cols-2 p-1 gap-1 bg-background border border-border rounded-[14px]">
                 <button
-                  onClick={handleAnalyzeFeedback}
-                  disabled={isAiLoading || !rawFeedback.trim()}
-                  className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 disabled:opacity-50"
+                  type="button"
+                  onClick={() => setRevisionTab('voice')}
+                  className={`py-2 text-xs font-semibold rounded-[10px] transition-all duration-150 ${
+                    revisionTab === 'voice'
+                      ? 'bg-card text-white border border-border font-bold'
+                      : 'text-muted hover:text-foreground'
+                  }`}
                 >
-                  {isAiLoading ? (
-                    <>
-                      <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                      Analyzing Feedback...
-                    </>
-                  ) : (
-                    <>
-                      Analyze & Generate Wizard
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </>
-                  )}
+                  🎤 Voice Note Feedback
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRevisionTab('text')}
+                  className={`py-2 text-xs font-semibold rounded-[10px] transition-all duration-150 ${
+                    revisionTab === 'text'
+                      ? 'bg-card text-white border border-border font-bold'
+                      : 'text-muted hover:text-foreground'
+                  }`}
+                >
+                  📝 Written Feedback
                 </button>
               </div>
-            ) : (
-              /* Step 2: Answer AI-Generated follow-up questions */
+            )}
+
+            {/* TAB CONTENT: VOICE NOTE FEEDBACK */}
+            {revisionTab === 'voice' && (
               <div className="space-y-4">
-                <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl space-y-1">
-                  <span className="text-[8px] uppercase font-bold text-slate-500">Summary of requests</span>
-                  <p className="text-[11px] text-slate-400 leading-relaxed">{aiAnalysis.summary}</p>
-                </div>
+                {/* 1. Voice Note Recording / Previewer */}
+                {!voicePreviewUrl && !voiceAiAnalysis && (
+                  <div className="space-y-3">
+                    {isRecordingVoice ? (
+                      <button
+                        type="button"
+                        onClick={stopVoiceRecording}
+                        className="w-full p-8 bg-red-950/20 border border-danger border-dashed rounded-[20px] flex flex-col items-center justify-center gap-3 transition-colors animate-pulse text-left"
+                      >
+                        <div className="p-3.5 bg-danger text-white rounded-full">
+                          <Mic className="w-6 h-6 animate-ping" />
+                        </div>
+                        <span className="text-sm font-semibold text-danger mx-auto">Recording Voice Feedback...</span>
+                        <span className="text-xs text-muted mx-auto">Click anywhere on this card to Stop Recording</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={startVoiceRecording}
+                        className="w-full p-8 bg-background border border-border border-dashed rounded-[20px] flex flex-col items-center justify-center gap-3 hover:border-border/80 transition-all group text-left"
+                      >
+                        <div className="p-3.5 bg-red-500/10 border border-red-500/20 text-red-500 rounded-full group-hover:scale-105 transition-transform">
+                          <Mic className="w-6 h-6" />
+                        </div>
+                        <span className="text-sm font-semibold text-white mx-auto">Record Audio Revision</span>
+                        <span className="text-xs text-muted mx-auto">Press to activate microphone and record feedback</span>
+                      </button>
+                    )}
+                  </div>
+                )}
 
-                {/* AI Follow up Questions */}
-                <div className="space-y-4">
-                  <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
-                    Follow-Up Questionnaire
-                  </span>
+                {/* Preview & Audio Action Panel */}
+                {voicePreviewUrl && !voiceAiAnalysis && (
+                  <div className="bg-background border border-border rounded-[20px] p-5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold text-slate-400">Audio Preview ({voiceDuration}s)</span>
+                      <button
+                        type="button"
+                        onClick={deleteVoiceRecording}
+                        className="text-xs text-danger hover:underline font-semibold"
+                      >
+                        Delete & Re-record
+                      </button>
+                    </div>
 
-                  {aiAnalysis.questions.map((q: string, idx: number) => (
-                    <div key={idx} className="space-y-1.5">
-                      <label className="block text-xs font-medium text-slate-300 leading-relaxed">
-                        {q}
+                    <audio src={voicePreviewUrl} controls className="w-full" />
+
+                    <div className="flex flex-col sm:flex-row gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={handleSubmitVoiceRevision}
+                        disabled={isPending}
+                        className="flex-1 py-2.5 px-4 bg-card hover:bg-surface border border-border text-slate-200 text-xs font-semibold rounded-[14px]"
+                      >
+                        {isPending ? 'Sending...' : 'Send Raw Voice Note'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleVoiceAiAnalyze}
+                        disabled={isVoiceAiLoading}
+                        className="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-[14px] flex items-center justify-center gap-1.5 shadow-lg shadow-blue-500/10"
+                      >
+                        {isVoiceAiLoading ? (
+                          <>
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            AI Understanding...
+                          </>
+                        ) : (
+                          <>
+                            Let AI Understand My Revision
+                            <Sparkles className="w-3.5 h-3.5" />
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* AI Voice Note Analysis Questionnaire */}
+                {voiceAiAnalysis && (
+                  <div className="space-y-4">
+                    <div className="space-y-3 max-h-64 overflow-y-auto">
+                      <div className="p-4 bg-background border border-border rounded-xl space-y-1">
+                        <span className="text-[9px] uppercase font-bold text-slate-500">Verbatim Transcript</span>
+                        <p className="text-xs text-slate-300 leading-relaxed italic">"{voiceAiAnalysis.transcription}"</p>
+                      </div>
+
+                      <div className="p-4 bg-background border border-border rounded-xl space-y-1">
+                        <span className="text-[9px] uppercase font-bold text-slate-500">AI Summary</span>
+                        <p className="text-xs text-slate-300 leading-relaxed">{voiceAiAnalysis.summary}</p>
+                      </div>
+                    </div>
+
+                    {/* Clarification MCQ Questions */}
+                    {voiceAiAnalysis.questions && voiceAiAnalysis.questions.length > 0 && (
+                      <div className="space-y-4 border-t border-border pt-4">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400">AI Clarification Questionnaire</h4>
+                        {voiceAiAnalysis.questions.map((qObj: any, qIdx: number) => (
+                          <div key={qIdx} className="space-y-2">
+                            <label className="block text-xs font-semibold text-slate-350">{qObj.question}</label>
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              {qObj.options.map((opt: string, oIdx: number) => (
+                                <button
+                                  type="button"
+                                  key={oIdx}
+                                  onClick={() =>
+                                    setVoiceClarificationAnswers((prev) => ({
+                                      ...prev,
+                                      [qObj.question]: opt,
+                                    }))
+                                  }
+                                  className={`px-3 py-2 text-left rounded-[10px] border text-xs transition-all ${
+                                    voiceClarificationAnswers[qObj.question] === opt
+                                      ? 'border-primary bg-primary/10 text-white font-semibold'
+                                      : 'border-border bg-background hover:bg-card text-slate-450 hover:text-slate-250'
+                                  }`}
+                                >
+                                  {opt}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className="flex gap-3 pt-2">
+                      <button
+                        type="button"
+                        onClick={deleteVoiceRecording}
+                        className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold rounded-[14px]"
+                      >
+                        Reset & Record Again
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubmitVoiceAiRevision}
+                        disabled={isPending}
+                        className="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-[14px]"
+                      >
+                        {isPending ? 'Publishing...' : 'Submit Revision Brief'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* TAB CONTENT: WRITTEN FEEDBACK */}
+            {revisionTab === 'text' && (
+              <div className="space-y-4">
+                {!aiAnalysis ? (
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <label className="block text-xs font-semibold text-slate-400">
+                        What adjustments are needed?
+                      </label>
+                      <p className="text-[10px] text-slate-500 leading-relaxed">
+                        Write your raw notes or complaints in your own words. The AI will parse it and formulate structured questions.
+                      </p>
+                    </div>
+
+                    <textarea
+                      value={rawFeedback}
+                      onChange={(e) => setRawFeedback(e.target.value)}
+                      rows={4}
+                      placeholder="e.g. The color scheme feels too corporate, I want a luxury Apple-like style. Also make the icons larger."
+                      className="w-full px-4 py-3 bg-slate-950/50 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors resize-none"
+                    />
+
+                    <button
+                      type="button"
+                      onClick={handleAnalyzeFeedback}
+                      disabled={isAiLoading || !rawFeedback.trim()}
+                      className="w-full py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-semibold rounded-xl flex items-center justify-center gap-2 shadow-lg shadow-blue-500/10 disabled:opacity-50"
+                    >
+                      {isAiLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin text-white" />
+                          Analyzing Feedback...
+                        </>
+                      ) : (
+                        <>
+                          Analyze & Generate Wizard
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </>
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="p-3.5 bg-slate-950 border border-slate-850 rounded-2xl space-y-1">
+                      <span className="text-[8px] uppercase font-bold text-slate-500">Summary of requests</span>
+                      <p className="text-[11px] text-slate-400 leading-relaxed">{aiAnalysis.summary}</p>
+                    </div>
+
+                    {/* AI Follow up Questions */}
+                    <div className="space-y-4 max-h-60 overflow-y-auto">
+                      <span className="text-[10px] uppercase font-bold tracking-wider text-slate-500">
+                        Follow-Up Questionnaire
+                      </span>
+
+                      {aiAnalysis.questions.map((q: string, idx: number) => (
+                        <div key={idx} className="space-y-1.5">
+                          <label className="block text-xs font-medium text-slate-300 leading-relaxed">
+                            {q}
+                          </label>
+                          <input
+                            type="text"
+                            value={questionAnswers[q] || ''}
+                            onChange={(e) =>
+                              setQuestionAnswers((prev) => ({
+                                ...prev,
+                                [q]: e.target.value,
+                              }))
+                            }
+                            placeholder="Your answer..."
+                            className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors"
+                          />
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Style and Priority settings */}
+                    <div className="grid grid-cols-2 gap-3.5">
+                      <div>
+                        <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">
+                          Preferred Style
+                        </label>
+                        <select
+                          value={selectedStyle}
+                          onChange={(e) => setSelectedStyle(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
+                        >
+                          <option value="Luxury">Luxury</option>
+                          <option value="Corporate">Corporate</option>
+                          <option value="Minimal">Minimal</option>
+                          <option value="Apple">Apple</option>
+                          <option value="Modern">Modern</option>
+                          <option value="Creative">Creative</option>
+                          <option value="Technology">Technology</option>
+                          <option value="Bold">Bold</option>
+                          <option value="Elegant">Elegant</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">
+                          Revision Priority
+                        </label>
+                        <select
+                          value={revisionPriority}
+                          onChange={(e) => setRevisionPriority(e.target.value)}
+                          className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
+                        >
+                          <option value="LOW">Low</option>
+                          <option value="MEDIUM">Medium</option>
+                          <option value="HIGH">High</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">
+                        Target Deadline (Optional)
                       </label>
                       <input
-                        type="text"
-                        value={questionAnswers[q] || ''}
-                        onChange={(e) =>
-                          setQuestionAnswers((prev) => ({
-                            ...prev,
-                            [q]: e.target.value,
-                          }))
-                        }
-                        placeholder="Your answer..."
-                        className="w-full px-3.5 py-2.5 bg-slate-950/60 border border-slate-800 rounded-xl text-xs text-slate-100 focus:outline-none focus:border-blue-500/80 transition-colors"
+                        type="date"
+                        value={revisionDeadline}
+                        onChange={(e) => setRevisionDeadline(e.target.value)}
+                        className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none"
                       />
                     </div>
-                  ))}
-                </div>
 
-                {/* Style and Priority settings */}
-                <div className="grid grid-cols-2 gap-3.5">
-                  <div>
-                    <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">
-                      Preferred Style
-                    </label>
-                    <select
-                      value={selectedStyle}
-                      onChange={(e) => setSelectedStyle(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80"
-                    >
-                      <option value="Luxury">Luxury</option>
-                      <option value="Corporate">Corporate</option>
-                      <option value="Minimal">Minimal</option>
-                      <option value="Apple">Apple</option>
-                      <option value="Modern">Modern</option>
-                      <option value="Creative">Creative</option>
-                      <option value="Technology">Technology</option>
-                      <option value="Bold">Bold</option>
-                      <option value="Elegant">Elegant</option>
-                    </select>
+                    <div className="flex gap-3 pt-3">
+                      <button
+                        type="button"
+                        onClick={() => setAiAnalysis(null)}
+                        className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700/50 transition-colors"
+                      >
+                        Adjust Raw Notes
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleSubmitRevision}
+                        disabled={isPending}
+                        className="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
+                      >
+                        {isPending ? 'Publishing...' : 'Submit Revision Brief'}
+                      </button>
+                    </div>
                   </div>
-                  <div>
-                    <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">
-                      Revision Priority
-                    </label>
-                    <select
-                      value={revisionPriority}
-                      onChange={(e) => setRevisionPriority(e.target.value)}
-                      className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80"
-                    >
-                      <option value="LOW">Low</option>
-                      <option value="MEDIUM">Medium</option>
-                      <option value="HIGH">High</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-[10px] uppercase font-semibold text-slate-500 mb-1">
-                    Target Deadline (Optional)
-                  </label>
-                  <input
-                    type="date"
-                    value={revisionDeadline}
-                    onChange={(e) => setRevisionDeadline(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none focus:border-blue-500/80"
-                  />
-                </div>
-
-                <div className="flex gap-3 pt-3">
-                  <button
-                    type="button"
-                    onClick={() => setAiAnalysis(null)}
-                    className="flex-1 py-2.5 px-4 bg-slate-800 hover:bg-slate-750 text-slate-200 text-xs font-semibold rounded-xl border border-slate-700/50 transition-colors"
-                  >
-                    Adjust Raw Notes
-                  </button>
-                  <button
-                    onClick={handleSubmitRevision}
-                    disabled={isPending}
-                    className="flex-1 py-2.5 px-4 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl flex items-center justify-center gap-1.5"
-                  >
-                    {isPending ? 'Publishing...' : 'Submit Revision Brief'}
-                  </button>
-                </div>
+                )}
               </div>
             )}
 

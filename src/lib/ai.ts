@@ -151,3 +151,91 @@ export async function transcribeVoiceNote(
     };
   }
 }
+
+export interface VoiceRevisionAnalysis {
+  transcription: string;
+  summary: string;
+  isAmbiguous: boolean;
+  questions: {
+    question: string;
+    options: string[];
+  }[];
+}
+
+export async function analyzeVoiceRevision(
+  audioBase64: string,
+  mimeType: string
+): Promise<VoiceRevisionAnalysis> {
+  const client = getGeminiClient();
+
+  if (!client) {
+    return {
+      transcription: 'Mock voice note transcription. The logo should be bigger and modern.',
+      summary: 'Client requested making the logo bigger and modern.',
+      isAmbiguous: true,
+      questions: [
+        {
+          question: 'Should the logo be larger or smaller?',
+          options: ['Larger', 'Smaller', 'Keep current size'],
+        },
+        {
+          question: 'Is this change for mobile, desktop, or both?',
+          options: ['Mobile', 'Desktop', 'Both'],
+        },
+      ],
+    };
+  }
+
+  try {
+    const model = client.getGenerativeModel({
+      model: 'gemini-1.5-flash',
+      generationConfig: { responseMimeType: 'application/json' },
+    });
+
+    const prompt = `
+      You are an AI assistant processing a client voice note feedback for a creative design build.
+      1. Transcribe the audio verbatim.
+      2. Generate a concise summary of their requests.
+      3. Detect if there is any ambiguity, vagueness, or missing choices in their feedback.
+      4. If clarification is needed, formulate 3-5 multiple-choice questions to ask the client.
+         - Each question must have a list of options (choices) for the client to pick from.
+         - Keep the questions simple and relevant to their requests (e.g. mobile vs desktop, larger vs smaller, colors, pages).
+      5. If the feedback is fully clear and has no ambiguity, do NOT ask any questions (return an empty list for questions and set isAmbiguous to false).
+
+      Respond ONLY with a JSON object matching this schema:
+      {
+        "transcription": string,
+        "summary": string,
+        "isAmbiguous": boolean,
+        "questions": [
+          {
+            "question": string,
+            "options": string[]
+          }
+        ]
+      }
+    `;
+
+    const result = await model.generateContent([
+      {
+        inlineData: {
+          data: audioBase64,
+          mimeType: mimeType,
+        },
+      },
+      { text: prompt },
+    ]);
+
+    const text = result.response.text();
+    return JSON.parse(text) as VoiceRevisionAnalysis;
+  } catch (error) {
+    console.error('Error in analyzeVoiceRevision:', error);
+    return {
+      transcription: 'Failed to transcribe audio.',
+      summary: 'An error occurred during voice analysis.',
+      isAmbiguous: false,
+      questions: [],
+    };
+  }
+}
+

@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache';
 import { getCurrentUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { analyzeFeedback, transcribeVoiceNote } from '@/lib/ai';
+import { analyzeFeedback, transcribeVoiceNote, analyzeVoiceRevision } from '@/lib/ai';
 import { DeliverableStatus, RevisionStatus, Priority } from '@prisma/client';
 import { logActivity } from '@/lib/activity';
 
@@ -278,3 +278,150 @@ export async function uploadClientVoiceNoteAction(
     return { success: false, error: err.message || 'Failed to process and upload voice note.' };
   }
 }
+
+export async function analyzeVoiceFeedbackAction(audioBase64: string, mimeType: string) {
+  try {
+    const { clientId } = await assertClientSession();
+    console.log('API Request: Analyzing voice feedback with AI...', { mimeType });
+    const analysis = await analyzeVoiceRevision(audioBase64, mimeType);
+    console.log('API Response: Voice feedback analyzed successfully:', analysis);
+    return { success: true, analysis };
+  } catch (err: any) {
+    console.error('Error in analyzeVoiceFeedbackAction:', err);
+    return { success: false, error: err.message || 'An error occurred during AI analysis.' };
+  }
+}
+
+export async function submitVoiceRevisionAction(
+  deliverableId: string,
+  rawFeedback: string,
+  audioBase64?: string,
+  audioDuration?: number,
+  aiAnalysis?: any,
+  answers?: Record<string, string>,
+  mimeType?: string
+) {
+  try {
+    const { clientId } = await assertClientSession();
+
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: deliverableId },
+      include: { project: true },
+    });
+
+    if (!deliverable || deliverable.project.clientId !== clientId) {
+      return { success: false, error: 'Access Denied: Deliverable not found.' };
+    }
+
+    let audioUrl: string | null = null;
+
+    // 1. Upload audio to Supabase Storage if present
+    if (audioBase64 && mimeType) {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+      if (supabaseUrl && serviceKey) {
+        const { createClient: createSupabaseAdmin } = await import('@supabase/supabase-js');
+        const supabaseAdmin = createSupabaseAdmin(supabaseUrl, serviceKey, {
+          auth: { persistSession: false },
+        });
+
+        // Ensure bucket exists
+        try {
+          const { data: buckets } = await supabaseAdmin.storage.listBuckets();
+          const bucketExists = buckets?.some((b) => b.name === 'voice-notes');
+          if (!bucketExists) {
+            await supabaseAdmin.storage.createBucket('voice-notes', {
+              public: true,
+            });
+          }
+        } catch (err) {
+          console.error('Failed to list or create Supabase bucket:', err);
+        }
+
+        const buffer = Buffer.from(audioBase64, 'base64');
+        const fileExt = mimeType.split('/')[1]?.split(';')[0] || 'webm';
+        const filePath = `${deliverable.projectId}/${Date.now()}-voice.${fileExt}`;
+
+        const { data, error } = await supabaseAdmin.storage
+          .from('voice-notes')
+          .upload(filePath, buffer, {
+            contentType: mimeType,
+            upsert: true,
+          });
+
+        if (error) {
+          console.error('Supabase upload error:', error.message);
+        } else {
+          const { data: { publicUrl } } = supabaseAdmin.storage.from('voice-notes').getPublicUrl(filePath);
+          audioUrl = publicUrl;
+        }
+      }
+    }
+
+    // 2. Prepare structured brief JSON
+    const structuredBrief = {
+      elementsToImprove: aiAnalysis?.elementsToImprove || ['Feedback Note'],
+      suggestedStyle: aiAnalysis?.suggestedStyle || 'Modern',
+      originalFeedback: rawFeedback || 'Voice Note feedback submitted.',
+      followUpQuestionsAnswers: answers
+        ? Object.entries(answers).map(([question, answer]) => ({
+            question,
+            answer,
+          }))
+        : [],
+      submittedAt: new Date().toISOString(),
+    };
+
+    // 3. Create Revision Request Record
+    const revision = await prisma.revisionRequest.create({
+      data: {
+        deliverableId,
+        projectId: deliverable.projectId,
+        clientId,
+        feedbackRaw: rawFeedback || 'Audio revision note',
+        structuredBrief,
+        status: RevisionStatus.OPEN,
+        audioUrl,
+        duration: audioDuration || null,
+        transcription: aiAnalysis?.transcription || null,
+        aiSummary: aiAnalysis?.summary || null,
+        clarification: answers ? (answers as any) : undefined,
+      },
+    });
+
+    // 4. Set Deliverable status to Revision Requested
+    await prisma.deliverable.update({
+      where: { id: deliverableId },
+      data: { status: DeliverableStatus.REVISION_REQUESTED },
+    });
+
+    await logActivity(`Submitted revision request for: "${deliverable.name}"`, 'RevisionRequest', {
+      deliverableId,
+      projectId: deliverable.projectId,
+      revisionId: revision.id,
+    });
+
+    // 5. Notify Admin Users
+    const admins = await prisma.user.findMany({ where: { role: 'ADMIN' } });
+    for (const admin of admins) {
+      await prisma.notification.create({
+        data: {
+          userId: admin.id,
+          title: 'Revision Requested',
+          content: `Revision requested on "${deliverable.name}" for client project "${deliverable.project.name}".`,
+          link: `/admin/deliverables`,
+        },
+      });
+    }
+
+    revalidatePath('/client');
+    revalidatePath('/admin/deliverables');
+
+    return { success: true, revision };
+  } catch (err: any) {
+    console.error('Error in submitVoiceRevisionAction:', err);
+    return { success: false, error: err.message || 'Failed to submit revision request.' };
+  }
+}
+

@@ -406,11 +406,17 @@ export async function createDeliverableRecord(formData: FormData) {
         status: DeliverableStatus.PENDING_REVIEW,
         version: 1,
       },
+      include: {
+        project: {
+          include: { client: true },
+        },
+      },
     });
 
     await logActivity(`Uploaded deliverable: "${name}"`, 'Deliverable', { deliverableId: deliverable.id, projectId });
-    revalidatePath('/admin');
-    return { success: true };
+    revalidatePath('/admin/deliverables');
+    revalidatePath('/client');
+    return { success: true, deliverable };
   } catch (err: any) {
     console.error("Error in createDeliverableRecord:", err);
     return { error: err.message || 'Failed to create deliverable.' };
@@ -724,3 +730,69 @@ export async function getAnalyticsData() {
     };
   }
 }
+
+export async function deleteDeliverableRecord(deliverableId: string) {
+  try {
+    const { getCurrentUser } = await import('@/lib/auth');
+    const user = await getCurrentUser();
+
+    if (!user || user.role !== 'ADMIN') {
+      return { error: 'Unauthorized: Only administrators can delete deliverables.' };
+    }
+
+    const deliverable = await prisma.deliverable.findUnique({
+      where: { id: deliverableId },
+    });
+
+    if (!deliverable) {
+      return { error: 'Deliverable not found.' };
+    }
+
+    // Delete associated storage object from Supabase if it exists
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (
+      supabaseUrl &&
+      serviceKey &&
+      deliverable.fileUrl.includes('supabase.co/storage/v1/object/public/files/')
+    ) {
+      try {
+        const parts = deliverable.fileUrl.split('/storage/v1/object/public/files/');
+        if (parts.length > 1) {
+          const filePath = decodeURIComponent(parts[1]);
+          const { createClient: createSupabaseAdmin } = await import('@supabase/supabase-js');
+          const supabaseAdmin = createSupabaseAdmin(supabaseUrl, serviceKey, {
+            auth: { persistSession: false },
+          });
+          const { error: storageError } = await supabaseAdmin.storage.from('files').remove([filePath]);
+          if (storageError) {
+            console.error('Failed to delete storage file:', storageError);
+          } else {
+            console.log(`Successfully deleted storage file: ${filePath}`);
+          }
+        }
+      } catch (storageErr) {
+        console.error('Error deleting from storage:', storageErr);
+      }
+    }
+
+    await prisma.deliverable.delete({
+      where: { id: deliverableId },
+    });
+
+    await logActivity(`Deleted deliverable: "${deliverable.name}"`, 'Deliverable', {
+      deliverableId,
+      projectId: deliverable.projectId,
+    });
+
+    revalidatePath('/admin/deliverables');
+    revalidatePath('/client');
+
+    return { success: true };
+  } catch (err: any) {
+    console.error('Error in deleteDeliverableRecord:', err);
+    return { error: err.message || 'Failed to delete deliverable.' };
+  }
+}
+
