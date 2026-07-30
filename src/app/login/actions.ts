@@ -46,7 +46,7 @@ export async function login(state: any, formData: FormData) {
 
   } catch (err: any) {
     console.error('Login database connection failure:', err);
-    return { error: 'Database connection failed. Please try again.' };
+    return { error: `Database connection failed: ${err.message || String(err)}` };
   }
 
   revalidatePath('/', 'layout');
