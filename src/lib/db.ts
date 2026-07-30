@@ -24,6 +24,17 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is missing.');
 }
 
+if (connectionString.includes('db.prisma.io')) {
+  console.warn(
+    '\x1b[33m%s\x1b[0m',
+    '⚠️ WARNING: Vesa OS is currently connecting to a temporary Prisma CLI database (db.prisma.io).'
+  );
+  console.warn(
+    '\x1b[33m%s\x1b[0m',
+    '⚠️ Please configure a permanent production-grade PostgreSQL database (e.g. Supabase or Neon).'
+  );
+}
+
 export const getPrismaClient = (): PrismaClient => {
   if (process.env.NODE_ENV === 'production') {
     const pool = new pg.Pool({ connectionString });

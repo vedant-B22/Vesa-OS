@@ -36,11 +36,11 @@ export default function AdminChatClient({ projects }: AdminChatClientProps) {
             >
               <div className="flex justify-between items-center mb-1">
                 <span className="text-[10px] uppercase font-bold text-slate-500">
-                  {project.client.name}
+                  {project.client?.name || 'System / Guest'}
                 </span>
               </div>
               <h3 className="text-sm font-semibold text-slate-200 truncate">
-                {project.name}
+                {project.name || 'Untitled Project'}
               </h3>
             </button>
           ))}
@@ -49,16 +49,16 @@ export default function AdminChatClient({ projects }: AdminChatClientProps) {
 
       {/* Real-time Chat Container */}
       <div className="lg:col-span-3">
-        {activeProject ? (
+        {activeProject && activeProject.id ? (
           <Chat
             projectId={activeProject.id}
-            projectName={activeProject.name}
+            projectName={activeProject.name || 'Untitled Project'}
             currentUserRole="ADMIN"
           />
         ) : (
           <div className="bg-slate-900/40 border border-slate-900 rounded-3xl p-16 text-center text-slate-500 text-sm flex flex-col items-center justify-center gap-2">
             <MessageSquare className="w-8 h-8 text-slate-800" />
-            <p>No projects available for chat. Create a project first!</p>
+            <p>No active project selected or available for chat.</p>
           </div>
         )}
       </div>
